@@ -13,6 +13,7 @@ import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
 import { loadConfig } from "../storage/config.js";
 import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../storage/history.js";
+import { getProjectInstructionsPath } from "../storage/paths.js";
 
 interface LaunchOptions {
   model: string;
@@ -107,7 +108,37 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       }
 
       if (value === "/help") {
-        setAgentLines(["/help /clear /cost /compact /exit"]);
+        setAgentLines(["/help /model /auth /context /clear /cost /compact /exit"]);
+        setInput("");
+        return;
+      }
+
+      if (value === "/model") {
+        setAgentLines([
+          `Route source ${route.source}`,
+          `Provider ${route.provider}`,
+          `Model ${route.model}`
+        ]);
+        setInput("");
+        return;
+      }
+
+      if (value === "/auth") {
+        setAgentLines([
+          "Use `neuro auth status` to inspect credentials",
+          "Use `neuro auth login <provider> --method api-key` to save a key"
+        ]);
+        setInput("");
+        return;
+      }
+
+      if (value === "/context") {
+        const instructions = loadProjectInstructions(cwd);
+        setAgentLines(
+          instructions
+            ? [`Context file ${getProjectInstructionsPath(cwd)}`, instructions.slice(0, 200)]
+            : [`No NEURO.md found at ${getProjectInstructionsPath(cwd)}`]
+        );
         setInput("");
         return;
       }

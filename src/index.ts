@@ -4,6 +4,12 @@ import { Command } from "commander";
 import { runAgentCommand } from "./cli/commands/agent.js";
 import { registerAuthCommands } from "./cli/commands/auth.js";
 import { runChatCommand } from "./cli/commands/chat.js";
+import { runConfigSetCommand, runConfigShowCommand } from "./cli/commands/config.js";
+import {
+  runContextInitCommand,
+  runContextSetCommand,
+  runContextShowCommand
+} from "./cli/commands/context.js";
 import { runCostCommand, runHistoryCommand } from "./cli/commands/history.js";
 import { runHealthCommand, runModelsCommand } from "./cli/commands/providers.js";
 import { loadConfig } from "./storage/config.js";
@@ -85,6 +91,51 @@ program
   .argument("[provider]", "Optional provider slug")
   .action(async (provider?: string) => {
     await runModelsCommand(provider);
+  });
+
+program
+  .command("config")
+  .description("Show or update NeuroCLI config")
+  .argument("[action]", "show or set", "show")
+  .argument("[key]", "Config key for set")
+  .argument("[value]", "Config value for set")
+  .action((action: string, key?: string, value?: string) => {
+    if (action === "show") {
+      runConfigShowCommand();
+      return;
+    }
+
+    if (action === "set" && key && value) {
+      runConfigSetCommand(key, value);
+      return;
+    }
+
+    throw new Error("Usage: neuro config show | neuro config set <key> <value>");
+  });
+
+program
+  .command("context")
+  .description("Show or manage project NEURO.md instructions")
+  .argument("[action]", "show, init, or set", "show")
+  .argument("[content]", "Content for context set")
+  .option("--cwd <cwd>", "Working directory", process.cwd())
+  .action((action: string, content: string | undefined, options: { cwd: string }) => {
+    if (action === "show") {
+      runContextShowCommand(options.cwd);
+      return;
+    }
+
+    if (action === "init") {
+      runContextInitCommand(options.cwd);
+      return;
+    }
+
+    if (action === "set" && content !== undefined) {
+      runContextSetCommand(options.cwd, content);
+      return;
+    }
+
+    throw new Error("Usage: neuro context show|init | neuro context set <content>");
   });
 
 program.action(async (options) => {

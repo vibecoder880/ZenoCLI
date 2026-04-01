@@ -62,6 +62,22 @@ node dist/index.js history --limit 10
 node dist/index.js cost
 ```
 
+Show or update config:
+
+```bash
+node dist/index.js config show
+node dist/index.js config set default.model openai/gpt-4.1
+node dist/index.js config set aliases.review anthropic/claude-sonnet-4-0
+```
+
+Manage project context:
+
+```bash
+node dist/index.js context init
+node dist/index.js context show
+node dist/index.js context set "# NEURO.md\nPrioritize src first."
+```
+
 ## Model routing
 
 Default aliases live in `~/.neurocli/config.toml`:
@@ -88,7 +104,7 @@ NeuroCLI stores local chat history in `~/.neurocli/history.json`.
 
 - `history` shows recent entries
 - `cost` shows total tracked tokens
-- TUI also supports `/cost`, `/help`, `/clear`, `/compact`, and `/exit`
+- TUI also supports `/cost`, `/help`, `/model`, `/auth`, `/context`, `/clear`, `/compact`, and `/exit`
 
 ## Verification
 

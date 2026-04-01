@@ -71,3 +71,14 @@ export function saveConfig(config: NeuroConfig): void {
   const configPath = getConfigPath();
   writeFileSync(configPath, toml.stringify(config as unknown as toml.JsonMap), "utf8");
 }
+
+export function getConfigPathname(): string {
+  return getConfigPath();
+}
+
+export function updateConfig(mutator: (config: NeuroConfig) => NeuroConfig): NeuroConfig {
+  const current = loadConfig();
+  const next = mutator(current);
+  saveConfig(next);
+  return next;
+}
