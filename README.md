@@ -65,6 +65,7 @@ Install globally from npm after publish:
 ```bash
 npm install -g neuro-cli
 neuro --help
+neuro version
 ```
 
 Run the TUI:
@@ -184,6 +185,7 @@ You can also run the packaging step locally:
 
 ```bash
 npm run release:package
+npm run release:verify
 ```
 
 Continuous verification for pushes and pull requests runs in:

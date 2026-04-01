@@ -19,6 +19,7 @@ import {
 } from "./cli/commands/history.js";
 import { runInitCommand } from "./cli/commands/init.js";
 import { runHealthCommand, runModelsCommand } from "./cli/commands/providers.js";
+import { runVersionCommand } from "./cli/commands/version.js";
 import { loadConfig } from "./storage/config.js";
 
 const program = new Command();
@@ -176,6 +177,13 @@ program
   .argument("[targetCwd]", "Optional target directory")
   .action((targetCwd?: string) => {
     runInitCommand(targetCwd ?? process.cwd());
+  });
+
+program
+  .command("version")
+  .description("Print the installed NeuroCLI version")
+  .action((_options: unknown) => {
+    runVersionCommand();
   });
 
 program.action(async (options) => {

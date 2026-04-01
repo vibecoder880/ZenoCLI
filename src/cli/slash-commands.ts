@@ -16,6 +16,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/health", description: "Check provider health" },
   { command: "/models", description: "List aliases and models" },
   { command: "/config", description: "Show config summary" },
+  { command: "/version", description: "Show installed version" },
   { command: "/context", description: "Set file context" },
   { command: "/compact", description: "Summarize history" },
   { command: "/exit", description: "Quit NeuroCLI" }

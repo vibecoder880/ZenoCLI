@@ -207,6 +207,12 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       return true;
     }
 
+    if (command.command === "/version") {
+      setAgentLines(["Run `neuro version` in the terminal to print the installed package version."]);
+      setInput("");
+      return true;
+    }
+
     if (command.command === "/context") {
       const instructions = loadProjectInstructions(cwd);
       setAgentLines(
