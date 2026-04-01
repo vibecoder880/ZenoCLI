@@ -18,4 +18,12 @@ describe("resolveModelRoute", () => {
       source: "explicit"
     });
   });
+
+  it("maps auto to the smart alias", () => {
+    expect(resolveModelRoute(DEFAULT_CONFIG, "auto")).toEqual({
+      model: "claude-sonnet-4-0",
+      provider: "anthropic",
+      source: "explicit"
+    });
+  });
 });

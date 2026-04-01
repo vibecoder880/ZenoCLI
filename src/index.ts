@@ -5,6 +5,7 @@ import { runAgentCommand } from "./cli/commands/agent.js";
 import { registerAuthCommands } from "./cli/commands/auth.js";
 import { runChatCommand } from "./cli/commands/chat.js";
 import { runCostCommand, runHistoryCommand } from "./cli/commands/history.js";
+import { runHealthCommand, runModelsCommand } from "./cli/commands/providers.js";
 import { loadConfig } from "./storage/config.js";
 
 const program = new Command();
@@ -69,6 +70,21 @@ program
   .description("Show tracked token usage")
   .action(() => {
     runCostCommand();
+  });
+
+program
+  .command("health")
+  .description("Check configured provider health")
+  .action(async () => {
+    await runHealthCommand();
+  });
+
+program
+  .command("models")
+  .description("List configured aliases and provider models")
+  .argument("[provider]", "Optional provider slug")
+  .action(async (provider?: string) => {
+    await runModelsCommand(provider);
   });
 
 program.action(async (options) => {

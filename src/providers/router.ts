@@ -34,6 +34,11 @@ export function resolveModelRoute(
   provider?: string
 ): ProviderRoute {
   if (model) {
+    if (model === "auto") {
+      const aliasTarget = config.aliases.smart ?? config.default.model;
+      return resolveModelRoute(config, aliasTarget, provider);
+    }
+
     const aliasTarget = config.aliases[model];
 
     if (aliasTarget) {
