@@ -182,7 +182,7 @@ program
 program
   .command("version")
   .description("Print the installed NeuroCLI version")
-  .action((_options: unknown) => {
+  .action(() => {
     runVersionCommand();
   });
 
