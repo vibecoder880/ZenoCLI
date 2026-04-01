@@ -5,6 +5,7 @@ export interface SlashCommand {
 
 export const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/help", description: "Show command usage" },
+  { command: "/init", description: "Explain workspace bootstrap" },
   { command: "/chat", description: "Explain chat mode" },
   { command: "/agent", description: "Explain agent mode" },
   { command: "/model", description: "Switch active model" },

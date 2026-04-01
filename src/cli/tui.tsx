@@ -92,6 +92,16 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       return true;
     }
 
+    if (command.command === "/init") {
+      setAgentLines([
+        "Workspace bootstrap runs from the terminal command.",
+        "Run: neuro init",
+        "That creates NEURO.md and .env.example in the current workspace."
+      ]);
+      setInput("");
+      return true;
+    }
+
     if (command.command === "/agent") {
       setAgentLines([
         "Agent mode runs from the terminal command.",

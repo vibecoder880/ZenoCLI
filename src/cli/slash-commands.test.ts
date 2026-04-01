@@ -23,4 +23,8 @@ describe("filterSlashCommands", () => {
       description: "Show recent history"
     });
   });
+
+  it("includes init in the slash command list", () => {
+    expect(SLASH_COMMANDS.some((entry) => entry.command === "/init")).toBe(true);
+  });
 });

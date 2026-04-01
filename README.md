@@ -116,6 +116,12 @@ Run diagnostics:
 node dist/index.js doctor
 ```
 
+Bootstrap a workspace:
+
+```bash
+node dist/index.js init
+```
+
 ## Model routing
 
 Default aliases live in `~/.neurocli/config.toml`:
@@ -144,7 +150,7 @@ NeuroCLI stores local chat history in `~/.neurocli/history.json`.
 - `history show <id>` prints a full stored exchange
 - `history clear` removes stored exchanges
 - `cost` shows total tracked tokens
-- TUI also supports `/cost`, `/help`, `/model`, `/auth`, `/context`, `/history`, `/clear`, `/compact`, and `/exit`
+- TUI also supports `/help`, `/init`, `/chat`, `/agent`, `/model`, `/auth`, `/history`, `/cost`, `/health`, `/models`, `/config`, `/context`, `/clear`, `/compact`, and `/exit`
 
 ## Verification
 

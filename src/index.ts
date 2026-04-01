@@ -17,6 +17,7 @@ import {
   runHistoryListCommand,
   runHistoryShowCommand
 } from "./cli/commands/history.js";
+import { runInitCommand } from "./cli/commands/init.js";
 import { runHealthCommand, runModelsCommand } from "./cli/commands/providers.js";
 import { loadConfig } from "./storage/config.js";
 
@@ -164,9 +165,17 @@ program
 program
   .command("doctor")
   .description("Inspect runtime, config, credentials, and release readiness")
-  .option("--cwd <cwd>", "Working directory", process.cwd())
-  .action(async (_unused: unknown, options: { cwd: string }) => {
-    await runDoctorCommand(options.cwd);
+  .argument("[targetCwd]", "Optional working directory")
+  .action(async (targetCwd?: string) => {
+    await runDoctorCommand(targetCwd ?? process.cwd());
+  });
+
+program
+  .command("init")
+  .description("Bootstrap a workspace with NEURO.md and .env.example")
+  .argument("[targetCwd]", "Optional target directory")
+  .action((targetCwd?: string) => {
+    runInitCommand(targetCwd ?? process.cwd());
   });
 
 program.action(async (options) => {
