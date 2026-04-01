@@ -12,6 +12,7 @@ import { loadProjectInstructions } from "../core/context.js";
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
 import { loadConfig } from "../storage/config.js";
+import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../storage/history.js";
 
 interface LaunchOptions {
   model: string;
@@ -41,6 +42,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   const [agentLines, setAgentLines] = useState<string[]>(["Ready"]);
   const [tokenCount, setTokenCount] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
+  const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
   const slashCommands = useMemo(() => filterSlashCommands(input), [input]);
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
 
@@ -104,6 +106,33 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         return;
       }
 
+      if (value === "/help") {
+        setAgentLines(["/help /clear /cost /compact /exit"]);
+        setInput("");
+        return;
+      }
+
+      if (value === "/cost") {
+        const usage = summarizeTokenUsage();
+        setAgentLines([
+          `Tracked sessions ${usage.totalEntries}`,
+          `Tracked tokens ${usage.totalTokens}`,
+          `Current session tokens ${tokenCount}`
+        ]);
+        setInput("");
+        return;
+      }
+
+      if (value === "/compact") {
+        const compactText = messages
+          .slice(-6)
+          .map((message) => `${message.role}: ${message.content.slice(0, 80)}`)
+          .join(" | ");
+        setAgentLines([compactText || "Conversation is empty."]);
+        setInput("");
+        return;
+      }
+
       setAgentLines([`Command ${value} is reserved for a later phase.`]);
       setInput("");
       return;
@@ -142,6 +171,15 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
       setTokenCount((current) => current + result.totalTokens);
       setAgentLines(["Response complete"]);
+      appendHistoryEntry({
+        cwd,
+        provider: route.provider,
+        model: route.model,
+        prompt: value,
+        response: result.text,
+        totalTokens: result.totalTokens
+      });
+      setHistoryCount(listHistoryEntries(200).length);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown provider error";
       setMessages((current) =>
@@ -163,7 +201,12 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
   return (
     <Box flexDirection="column">
-      <Header model={model} provider={provider} tokens={tokenCount} />
+      <Header
+        model={route.model}
+        provider={route.provider}
+        tokens={tokenCount}
+        historyEntries={historyCount}
+      />
       <AgentStatus lines={agentLines} />
       <MessageList messages={messages} />
       {input.startsWith("/") ? (

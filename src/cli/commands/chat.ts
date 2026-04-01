@@ -3,6 +3,7 @@ import { collectProviderText } from "../../core/stream.js";
 import { createProvider } from "../../providers/index.js";
 import { resolveModelRoute } from "../../providers/router.js";
 import { loadConfig } from "../../storage/config.js";
+import { appendHistoryEntry } from "../../storage/history.js";
 
 interface RunChatOptions {
   prompt: string;
@@ -35,4 +36,13 @@ export async function runChatCommand(options: RunChatOptions): Promise<void> {
   }
 
   process.stdout.write("\n");
+
+  appendHistoryEntry({
+    cwd: options.cwd ?? process.cwd(),
+    provider: route.provider,
+    model: route.model,
+    prompt: options.prompt,
+    response: result.text,
+    totalTokens: result.totalTokens
+  });
 }

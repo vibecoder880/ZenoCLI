@@ -55,6 +55,13 @@ Run the agent loop:
 node dist/index.js agent "Inspect the project and summarize the highest-risk gaps"
 ```
 
+Show recent history and tracked token usage:
+
+```bash
+node dist/index.js history --limit 10
+node dist/index.js cost
+```
+
 ## Model routing
 
 Default aliases live in `~/.neurocli/config.toml`:
@@ -74,6 +81,14 @@ node dist/index.js chat "Summarize this file" --model google/gemini-2.5-pro
 ## Project instructions
 
 If a project contains `NEURO.md` in the working directory, NeuroCLI injects that file as project-specific guidance for chat and agent requests.
+
+## History and usage
+
+NeuroCLI stores local chat history in `~/.neurocli/history.json`.
+
+- `history` shows recent entries
+- `cost` shows total tracked tokens
+- TUI also supports `/cost`, `/help`, `/clear`, `/compact`, and `/exit`
 
 ## Verification
 

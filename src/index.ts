@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { runAgentCommand } from "./cli/commands/agent.js";
 import { registerAuthCommands } from "./cli/commands/auth.js";
 import { runChatCommand } from "./cli/commands/chat.js";
+import { runCostCommand, runHistoryCommand } from "./cli/commands/history.js";
 import { loadConfig } from "./storage/config.js";
 
 const program = new Command();
@@ -53,6 +54,21 @@ program
       cwd: options.cwd,
       maxTurns: Number(options.maxTurns)
     });
+  });
+
+program
+  .command("history")
+  .description("Show recent chat history")
+  .option("--limit <count>", "Maximum entries to show", "10")
+  .action((options: { limit: string }) => {
+    runHistoryCommand(Number(options.limit));
+  });
+
+program
+  .command("cost")
+  .description("Show tracked token usage")
+  .action(() => {
+    runCostCommand();
   });
 
 program.action(async (options) => {
