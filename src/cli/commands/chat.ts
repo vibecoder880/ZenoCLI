@@ -1,7 +1,8 @@
 import { loadProjectInstructions } from "../../core/context.js";
 import { collectProviderText } from "../../core/stream.js";
 import { createProvider } from "../../providers/index.js";
-import { resolveModelRoute } from "../../providers/router.js";
+import { estimateCostUsd } from "../../providers/pricing.js";
+import { selectUsableRoute } from "../../providers/router-fallback.js";
 import { loadConfig } from "../../storage/config.js";
 import { appendHistoryEntry } from "../../storage/history.js";
 
@@ -15,8 +16,12 @@ interface RunChatOptions {
 
 export async function runChatCommand(options: RunChatOptions): Promise<void> {
   const config = loadConfig();
-  const route = resolveModelRoute(config, options.model, options.provider);
+  const selection = selectUsableRoute(config, undefined, options.model, options.provider);
+  const route = selection.route;
   const aiProvider = createProvider(route.provider);
+  if (selection.warning) {
+    console.log(selection.warning);
+  }
   const projectInstructions = loadProjectInstructions(options.cwd);
   const messages = [
     ...(projectInstructions
@@ -43,6 +48,9 @@ export async function runChatCommand(options: RunChatOptions): Promise<void> {
     model: route.model,
     prompt: options.prompt,
     response: result.text,
-    totalTokens: result.totalTokens
+    totalTokens: result.totalTokens,
+    inputTokens: result.inputTokens,
+    outputTokens: result.outputTokens,
+    estimatedCostUsd: estimateCostUsd(route.provider, route.model, result.inputTokens, result.outputTokens)
   });
 }

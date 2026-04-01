@@ -11,6 +11,9 @@ export interface HistoryEntry {
   prompt: string;
   response: string;
   totalTokens: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
 }
 
 interface HistoryStore {
@@ -58,11 +61,18 @@ export function listHistoryEntries(limit = 20): HistoryEntry[] {
   return loadHistoryStore().entries.slice(0, limit);
 }
 
-export function summarizeTokenUsage(): { totalEntries: number; totalTokens: number } {
+export function summarizeTokenUsage(): {
+  totalEntries: number;
+  totalTokens: number;
+  totalEstimatedCostUsd: number;
+} {
   const entries = loadHistoryStore().entries;
 
   return {
     totalEntries: entries.length,
-    totalTokens: entries.reduce((sum, entry) => sum + entry.totalTokens, 0)
+    totalTokens: entries.reduce((sum, entry) => sum + entry.totalTokens, 0),
+    totalEstimatedCostUsd: Number(
+      entries.reduce((sum, entry) => sum + (entry.estimatedCostUsd ?? 0), 0).toFixed(6)
+    )
   };
 }

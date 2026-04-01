@@ -5,9 +5,11 @@ export async function collectProviderText(
   model: string,
   messages: ChatMessage[],
   onText?: (chunk: string) => void
-): Promise<{ text: string; totalTokens: number }> {
+): Promise<{ text: string; totalTokens: number; inputTokens: number; outputTokens: number }> {
   let text = "";
   let totalTokens = 0;
+  let inputTokens = 0;
+  let outputTokens = 0;
 
   for await (const event of provider.chat({ model, messages })) {
     if (event.type === "text") {
@@ -17,6 +19,8 @@ export async function collectProviderText(
 
     if (event.type === "done") {
       totalTokens = event.usage?.totalTokens ?? totalTokens;
+      inputTokens = event.usage?.inputTokens ?? inputTokens;
+      outputTokens = event.usage?.outputTokens ?? outputTokens;
     }
 
     if (event.type === "error") {
@@ -24,5 +28,5 @@ export async function collectProviderText(
     }
   }
 
-  return { text, totalTokens };
+  return { text, totalTokens, inputTokens, outputTokens };
 }

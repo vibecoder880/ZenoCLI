@@ -23,13 +23,15 @@ describe("history storage", () => {
       model: "gpt-4.1-mini",
       prompt: "hello",
       response: "world",
-      totalTokens: 42
+      totalTokens: 42,
+      estimatedCostUsd: 0.001
     });
 
     expect(listHistoryEntries(1)).toHaveLength(1);
     expect(summarizeTokenUsage()).toEqual({
       totalEntries: 1,
-      totalTokens: 42
+      totalTokens: 42,
+      totalEstimatedCostUsd: 0.001
     });
   });
 });

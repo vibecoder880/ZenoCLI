@@ -1,7 +1,7 @@
 import { runAgentLoop } from "../../agent/loop.js";
 import { loadProjectInstructions } from "../../core/context.js";
 import { createProvider } from "../../providers/index.js";
-import { resolveModelRoute } from "../../providers/router.js";
+import { selectUsableRoute } from "../../providers/router-fallback.js";
 import { loadConfig } from "../../storage/config.js";
 
 interface RunAgentOptions {
@@ -14,8 +14,12 @@ interface RunAgentOptions {
 
 export async function runAgentCommand(options: RunAgentOptions): Promise<void> {
   const config = loadConfig();
-  const route = resolveModelRoute(config, options.model, options.provider);
+  const selection = selectUsableRoute(config, undefined, options.model, options.provider);
+  const route = selection.route;
   const provider = createProvider(route.provider);
+  if (selection.warning) {
+    process.stdout.write(`${selection.warning}\n`);
+  }
   const result = await runAgentLoop({
     provider,
     model: route.model,

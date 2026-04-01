@@ -10,7 +10,7 @@ export function runHistoryCommand(limit = 10): void {
 
   for (const entry of entries) {
     console.log(
-      `[${new Date(entry.createdAt).toISOString()}] ${entry.provider}/${entry.model} tokens=${entry.totalTokens}`
+      `[${new Date(entry.createdAt).toISOString()}] ${entry.provider}/${entry.model} tokens=${entry.totalTokens} cost=$${(entry.estimatedCostUsd ?? 0).toFixed(6)}`
     );
     console.log(`prompt: ${entry.prompt}`);
     console.log(`response: ${entry.response.slice(0, 160)}`);
@@ -22,4 +22,5 @@ export function runCostCommand(): void {
   const usage = summarizeTokenUsage();
   console.log(`History entries: ${usage.totalEntries}`);
   console.log(`Total tokens tracked: ${usage.totalTokens}`);
+  console.log(`Estimated total cost (USD): $${usage.totalEstimatedCostUsd.toFixed(6)}`);
 }
