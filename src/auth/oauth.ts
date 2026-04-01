@@ -115,11 +115,32 @@ export async function exchangeAuthorizationCode(
   config: OAuthProviderConfig,
   code: string
 ): Promise<OAuthTokenResponse> {
+  return await postOAuthTokenRequest(config, {
+    grant_type: "authorization_code",
+    code
+  });
+}
+
+export async function refreshOAuthToken(
+  config: OAuthProviderConfig,
+  refreshToken: string
+): Promise<OAuthTokenResponse> {
+  return await postOAuthTokenRequest(config, {
+    grant_type: "refresh_token",
+    refresh_token: refreshToken
+  });
+}
+
+async function postOAuthTokenRequest(
+  config: OAuthProviderConfig,
+  payload: Record<string, string>
+): Promise<OAuthTokenResponse> {
   const body = new URLSearchParams();
-  body.set("grant_type", "authorization_code");
   body.set("client_id", config.clientId);
   body.set("redirect_uri", config.redirectUri);
-  body.set("code", code);
+  for (const [key, value] of Object.entries(payload)) {
+    body.set(key, value);
+  }
 
   if (config.clientSecret) {
     body.set("client_secret", config.clientSecret);

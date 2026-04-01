@@ -1,4 +1,4 @@
-import { AuthProfileStore } from "../auth/auth-profiles.js";
+import { AuthProfileStore, isProfileExpired } from "../auth/auth-profiles.js";
 
 export function resolveProviderSecret(
   store: AuthProfileStore,
@@ -14,6 +14,10 @@ export function resolveProviderSecret(
   const profile = store.getPreferredProfile(provider);
 
   if (!profile) {
+    return undefined;
+  }
+
+  if (isProfileExpired(profile)) {
     return undefined;
   }
 

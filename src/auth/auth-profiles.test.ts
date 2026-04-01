@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
-import { AuthProfileStore } from "./auth-profiles.js";
+import { AuthProfileStore, isProfileExpired } from "./auth-profiles.js";
 
 const tempHome = "D:/VibeCoder/NeuroCli/.tmp-home";
 
@@ -27,5 +27,21 @@ describe("AuthProfileStore", () => {
     });
 
     expect(store.getActiveProfile("openai")?.id).toBe(saved.id);
+  });
+
+  it("marks expired oauth profiles as expired", () => {
+    const now = Date.now();
+    expect(
+      isProfileExpired({
+        id: "google:test",
+        type: "oauth",
+        provider: "google",
+        access: "access",
+        refresh: "refresh",
+        expires: now - 1,
+        createdAt: now,
+        updatedAt: now
+      })
+    ).toBe(true);
   });
 });

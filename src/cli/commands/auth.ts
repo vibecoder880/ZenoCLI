@@ -1,7 +1,7 @@
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
-import { AuthProfileStore, maskSecret } from "../../auth/auth-profiles.js";
+import { AuthProfileStore, isProfileExpired, maskSecret } from "../../auth/auth-profiles.js";
 import { waitForOAuthCode } from "../../auth/oauth-server.js";
 import {
   buildAuthorizationUrl,
@@ -10,7 +10,8 @@ import {
   fetchOAuthEmail,
   getOAuthConfig,
   openAuthorizationUrl,
-  promptForAuthorizationCode
+  promptForAuthorizationCode,
+  refreshOAuthToken
 } from "../../auth/oauth.js";
 
 function registerLoginCommand(command: Command): void {
@@ -163,12 +164,56 @@ function registerStatusCommand(command: Command): void {
         const active = store.getActiveProfile(provider);
         const allProfiles = store.listProfiles(provider);
         const status = active
-          ? `active=${active.id} type=${active.type}`
+          ? `active=${active.id} type=${active.type} expired=${isProfileExpired(active)}`
           : allProfiles.length > 0
             ? `profiles=${allProfiles.length} no active profile`
             : "not configured";
         console.log(`${provider}: ${status}`);
       }
+    });
+}
+
+function registerRefreshCommand(command: Command): void {
+  command
+    .command("refresh")
+    .description("Refresh an OAuth profile using its refresh token")
+    .argument("<provider>", "Provider slug")
+    .option("--profile <profileId>", "Specific profile to refresh")
+    .action(async (provider: string, options: { profile?: string }) => {
+      const store = new AuthProfileStore();
+      const profile =
+        options.profile !== undefined
+          ? store.listProfiles(provider).find((entry) => entry.id === options.profile)
+          : store.getActiveProfile(provider);
+
+      if (!profile) {
+        throw new Error(`No profile found for provider ${provider}.`);
+      }
+
+      if (profile.type !== "oauth") {
+        throw new Error(`Profile ${profile.id} is not an OAuth profile.`);
+      }
+
+      if (!profile.refresh) {
+        throw new Error(`Profile ${profile.id} does not have a refresh token.`);
+      }
+
+      const config = getOAuthConfig(provider);
+      const token = await refreshOAuthToken(config, profile.refresh);
+      const updated = store.updateProfile(profile.id, (current) => {
+        if (current.type !== "oauth") {
+          return current;
+        }
+
+        return {
+          ...current,
+          access: token.access_token,
+          refresh: token.refresh_token ?? current.refresh,
+          expires: Date.now() + (token.expires_in ?? 3600) * 1000
+        };
+      });
+
+      console.log(`Refreshed ${updated.id}`);
     });
 }
 
@@ -179,4 +224,5 @@ export function registerAuthCommands(program: Command): void {
   registerSwitchCommand(auth);
   registerRemoveCommand(auth);
   registerStatusCommand(auth);
+  registerRefreshCommand(auth);
 }

@@ -25,6 +25,8 @@ You can also save credentials locally:
 neuro auth login openai --method api-key
 neuro auth login anthropic --method api-key
 neuro auth login google --method api-key
+neuro auth status
+neuro auth refresh google
 ```
 
 OAuth login is also supported:

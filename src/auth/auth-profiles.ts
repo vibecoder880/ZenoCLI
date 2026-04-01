@@ -133,7 +133,10 @@ export class AuthProfileStore {
 
   public getPreferredProfile(provider: string): StoredAuthProfile | undefined {
     const profiles = this.listProfiles(provider)
-      .filter((profile) => !profile.cooldownUntil || profile.cooldownUntil < Date.now())
+      .filter(
+        (profile) =>
+          (!profile.cooldownUntil || profile.cooldownUntil < Date.now()) && !isProfileExpired(profile)
+      )
       .sort((left, right) => {
         const score = (profile: StoredAuthProfile): number => {
           if (profile.type === "oauth") {
@@ -150,7 +153,12 @@ export class AuthProfileStore {
         return score(right) - score(left) || right.updatedAt - left.updatedAt;
       });
 
-    return this.getActiveProfile(provider) ?? profiles[0];
+    const active = this.getActiveProfile(provider);
+    if (active && !isProfileExpired(active)) {
+      return active;
+    }
+
+    return profiles[0];
   }
 
   public markCooldown(profileId: string, cooldownMs: number): void {
@@ -165,6 +173,25 @@ export class AuthProfileStore {
     profile.updatedAt = Date.now();
     this.save(data);
   }
+
+  public updateProfile(profileId: string, updater: (profile: StoredAuthProfile) => StoredAuthProfile): StoredAuthProfile {
+    const data = this.load();
+    const profile = data.profiles[profileId];
+
+    if (!profile) {
+      throw new Error(`Profile "${profileId}" was not found.`);
+    }
+
+    const updated = updater(profile);
+    data.profiles[profileId] = {
+      ...updated,
+      id: profile.id,
+      createdAt: profile.createdAt,
+      updatedAt: Date.now()
+    };
+    this.save(data);
+    return data.profiles[profileId];
+  }
 }
 
 export function maskSecret(secret: string): string {
@@ -173,4 +200,16 @@ export function maskSecret(secret: string): string {
   }
 
   return `${secret.slice(0, 4)}...${secret.slice(-4)}`;
+}
+
+export function isProfileExpired(profile: StoredAuthProfile, now = Date.now()): boolean {
+  if (profile.type === "oauth") {
+    return profile.expires <= now;
+  }
+
+  if (profile.type === "token" && profile.expires) {
+    return profile.expires <= now;
+  }
+
+  return false;
 }
