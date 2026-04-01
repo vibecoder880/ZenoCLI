@@ -149,6 +149,10 @@ npm run lint
 npm run build
 ```
 
+Detailed verification matrix:
+
+- See [docs/verification-checklist.md](D:/VibeCoder/NeuroCli/docs/verification-checklist.md)
+
 ## Releases
 
 The workflow at `.github/workflows/release.yml` builds and verifies the project on:
