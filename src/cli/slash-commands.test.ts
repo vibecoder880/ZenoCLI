@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterSlashCommands, SLASH_COMMANDS } from "./slash-commands.js";
+import { filterSlashCommands, findSlashCommand, SLASH_COMMANDS } from "./slash-commands.js";
 
 describe("filterSlashCommands", () => {
   it("returns no commands for non-slash input", () => {
@@ -12,7 +12,15 @@ describe("filterSlashCommands", () => {
 
   it("filters commands by substring", () => {
     expect(filterSlashCommands("/mo")).toEqual([
-      { command: "/model", description: "Switch active model" }
+      { command: "/model", description: "Switch active model" },
+      { command: "/models", description: "List aliases and models" }
     ]);
+  });
+
+  it("finds an exact slash command", () => {
+    expect(findSlashCommand("/history")).toEqual({
+      command: "/history",
+      description: "Show recent history"
+    });
   });
 });

@@ -5,17 +5,19 @@ import { Header } from "./components/Header.js";
 import { MessageList, type ChatLine } from "./components/MessageList.js";
 import { Prompt } from "./components/Prompt.js";
 import { SlashMenu } from "./components/SlashMenu.js";
+import { AuthProfileStore } from "../auth/auth-profiles.js";
 import { createProvider } from "../providers/index.js";
 import type { ChatMessage } from "../providers/base.js";
 import { estimateCostUsd } from "../providers/pricing.js";
 import { selectUsableRoute } from "../providers/router-fallback.js";
-import { filterSlashCommands } from "./slash-commands.js";
+import { filterSlashCommands, findSlashCommand, SLASH_COMMANDS } from "./slash-commands.js";
 import { loadProjectInstructions } from "../core/context.js";
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
-import { loadConfig } from "../storage/config.js";
+import { getConfigPathname, loadConfig } from "../storage/config.js";
 import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../storage/history.js";
 import { getProjectInstructionsPath } from "../storage/paths.js";
+import { listProviderCatalog, tryCreateProvider } from "../providers/index.js";
 
 interface LaunchOptions {
   model: string;
@@ -58,6 +60,167 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     setSelectedSlashIndex(0);
   }, [slashCommands.length]);
 
+  const executeSlashCommand = async (value: string): Promise<boolean> => {
+    const command = findSlashCommand(value);
+
+    if (!command) {
+      return false;
+    }
+
+    if (command.command === "/exit") {
+      exit();
+      onExit();
+      return true;
+    }
+
+    if (command.command === "/clear") {
+      setMessages([]);
+      setAgentLines(["Conversation cleared"]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/help") {
+      setAgentLines([SLASH_COMMANDS.map((entry) => entry.command).join(" ")]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/chat") {
+      setAgentLines(["Chat mode is active. Type any prompt and press Enter."]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/agent") {
+      setAgentLines([
+        "Agent mode runs from the terminal command.",
+        "Run: neuro agent \"your task\""
+      ]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/model") {
+      setAgentLines([
+        `Requested ${requestedRoute.provider}/${requestedRoute.model}`,
+        `Active ${activeRoute.provider}/${activeRoute.model}`,
+        `Route source ${activeRoute.source}`
+      ]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/auth") {
+      const store = new AuthProfileStore();
+      setAgentLines(
+        ["openai", "anthropic", "google"].map((providerName) => {
+          const active = store.getActiveProfile(providerName);
+          return `${providerName}: ${active ? `${active.type} ${active.id}` : "not configured"}`;
+        })
+      );
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/history") {
+      const recent = listHistoryEntries(5);
+      setAgentLines(
+        recent.length > 0
+          ? recent.map(
+              (entry) =>
+                `${entry.id} ${entry.provider}/${entry.model} ${new Date(entry.createdAt).toLocaleString()}`
+            )
+          : ["No stored history yet."]
+      );
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/cost") {
+      const usage = summarizeTokenUsage();
+      setAgentLines([
+        `Tracked sessions ${usage.totalEntries}`,
+        `Tracked tokens ${usage.totalTokens}`,
+        `Tracked cost $${usage.totalEstimatedCostUsd.toFixed(6)}`,
+        `Current session tokens ${tokenCount}`,
+        `Current session cost $${sessionCost.toFixed(6)}`
+      ]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/health") {
+      const lines: string[] = [];
+      for (const entry of listProviderCatalog()) {
+        const created = tryCreateProvider(entry.slug);
+        if (!created.ok) {
+          lines.push(`${entry.slug}: unavailable`);
+          continue;
+        }
+
+        const status = await created.provider.healthCheck();
+        lines.push(`${entry.slug}: ${status.ok ? "ok" : "error"}`);
+      }
+      setAgentLines(lines);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/models") {
+      const lines = Object.entries(config.aliases).map(([alias, target]) => `alias ${alias} -> ${target}`);
+      for (const entry of listProviderCatalog()) {
+        const created = tryCreateProvider(entry.slug);
+        if (!created.ok) {
+          lines.push(`${entry.slug}: unavailable`);
+          continue;
+        }
+
+        const models = await created.provider.listModels();
+        for (const modelInfo of models) {
+          lines.push(`${entry.slug}: ${modelInfo.id}`);
+        }
+      }
+      setAgentLines(lines);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/config") {
+      setAgentLines([
+        `Config path ${getConfigPathname()}`,
+        `default.model ${config.default.model}`,
+        `default.provider ${config.default.provider}`,
+        `default.streaming ${config.default.streaming}`
+      ]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/context") {
+      const instructions = loadProjectInstructions(cwd);
+      setAgentLines(
+        instructions
+          ? [`Context file ${getProjectInstructionsPath(cwd)}`, instructions.slice(0, 200)]
+          : [`No NEURO.md found at ${getProjectInstructionsPath(cwd)}`]
+      );
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/compact") {
+      const compactText = messages
+        .slice(-6)
+        .map((message) => `${message.role}: ${message.content.slice(0, 80)}`)
+        .join(" | ");
+      setAgentLines([compactText || "Conversation is empty."]);
+      setInput("");
+      return true;
+    }
+
+    return false;
+  };
+
   useInput((_, key) => {
     if (slashCommands.length === 0) {
       if (key.escape) {
@@ -87,9 +250,15 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       return;
     }
 
-    if (key.tab || key.return) {
+    if (key.tab) {
       const selected = slashCommands[selectedSlashIndex];
       setInput(selected.command);
+      return;
+    }
+
+    if (key.return) {
+      const selected = slashCommands[selectedSlashIndex];
+      void executeSlashCommand(selected.command);
     }
   });
 
@@ -101,89 +270,8 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     }
 
     if (value.startsWith("/")) {
-      if (value === "/exit") {
-        exit();
-        onExit();
-        return;
-      }
-
-      if (value === "/clear") {
-        setMessages([]);
-        setAgentLines(["Conversation cleared"]);
-        setInput("");
-        return;
-      }
-
-      if (value === "/help") {
-        setAgentLines(["/help /model /auth /context /history /clear /cost /compact /exit"]);
-        setInput("");
-        return;
-      }
-
-      if (value === "/model") {
-        setAgentLines([
-          `Requested ${requestedRoute.provider}/${requestedRoute.model}`,
-          `Active ${activeRoute.provider}/${activeRoute.model}`,
-          `Route source ${activeRoute.source}`
-        ]);
-        setInput("");
-        return;
-      }
-
-      if (value === "/auth") {
-        setAgentLines([
-          "Use `neuro auth status` to inspect credentials",
-          "Use `neuro auth login <provider> --method api-key` to save a key"
-        ]);
-        setInput("");
-        return;
-      }
-
-      if (value === "/context") {
-        const instructions = loadProjectInstructions(cwd);
-        setAgentLines(
-          instructions
-            ? [`Context file ${getProjectInstructionsPath(cwd)}`, instructions.slice(0, 200)]
-            : [`No NEURO.md found at ${getProjectInstructionsPath(cwd)}`]
-        );
-        setInput("");
-        return;
-      }
-
-      if (value === "/cost") {
-        const usage = summarizeTokenUsage();
-        setAgentLines([
-          `Tracked sessions ${usage.totalEntries}`,
-          `Tracked tokens ${usage.totalTokens}`,
-          `Tracked cost $${usage.totalEstimatedCostUsd.toFixed(6)}`,
-          `Current session tokens ${tokenCount}`,
-          `Current session cost $${sessionCost.toFixed(6)}`
-        ]);
-        setInput("");
-        return;
-      }
-
-      if (value === "/history") {
-        const recent = listHistoryEntries(3);
-        setAgentLines(
-          recent.length > 0
-            ? recent.map(
-                (entry) =>
-                  `${entry.id} ${entry.provider}/${entry.model} ${new Date(entry.createdAt).toLocaleString()}`
-              )
-            : ["No stored history yet."]
-        );
-        setInput("");
-        return;
-      }
-
-      if (value === "/compact") {
-        const compactText = messages
-          .slice(-6)
-          .map((message) => `${message.role}: ${message.content.slice(0, 80)}`)
-          .join(" | ");
-        setAgentLines([compactText || "Conversation is empty."]);
-        setInput("");
+      const executed = await executeSlashCommand(value);
+      if (executed) {
         return;
       }
 
