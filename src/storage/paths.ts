@@ -15,3 +15,11 @@ export function ensureAppDataDirectory(): string {
 export function getProjectInstructionsPath(cwd = process.cwd()): string {
   return path.join(cwd, "NEURO.md");
 }
+
+export function getHistoryPathname(): string {
+  return path.join(ensureAppDataDirectory(), "history.json");
+}
+
+export function getAuthProfilesPathname(): string {
+  return path.join(ensureAppDataDirectory(), "auth-profiles.json");
+}

@@ -110,6 +110,12 @@ node dist/index.js context show
 node dist/index.js context set "# NEURO.md\nPrioritize src first."
 ```
 
+Run diagnostics:
+
+```bash
+node dist/index.js doctor
+```
+
 ## Model routing
 
 Default aliases live in `~/.neurocli/config.toml`:
@@ -173,3 +179,7 @@ You can also run the packaging step locally:
 ```bash
 npm run release:package
 ```
+
+Continuous verification for pushes and pull requests runs in:
+
+- [D:/VibeCoder/NeuroCli/.github/workflows/ci.yml](D:/VibeCoder/NeuroCli/.github/workflows/ci.yml)

@@ -10,6 +10,7 @@ import {
   runContextSetCommand,
   runContextShowCommand
 } from "./cli/commands/context.js";
+import { runDoctorCommand } from "./cli/commands/doctor.js";
 import {
   runCostCommand,
   runHistoryClearCommand,
@@ -158,6 +159,14 @@ program
     }
 
     throw new Error("Usage: neuro context show|init | neuro context set <content>");
+  });
+
+program
+  .command("doctor")
+  .description("Inspect runtime, config, credentials, and release readiness")
+  .option("--cwd <cwd>", "Working directory", process.cwd())
+  .action(async (_unused: unknown, options: { cwd: string }) => {
+    await runDoctorCommand(options.cwd);
   });
 
 program.action(async (options) => {
