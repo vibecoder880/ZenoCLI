@@ -2,6 +2,16 @@ import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
 import { AuthProfileStore, maskSecret } from "../../auth/auth-profiles.js";
+import { waitForOAuthCode } from "../../auth/oauth-server.js";
+import {
+  buildAuthorizationUrl,
+  createOAuthState,
+  exchangeAuthorizationCode,
+  fetchOAuthEmail,
+  getOAuthConfig,
+  openAuthorizationUrl,
+  promptForAuthorizationCode
+} from "../../auth/oauth.js";
 
 function registerLoginCommand(command: Command): void {
   command
@@ -11,11 +21,54 @@ function registerLoginCommand(command: Command): void {
     .requiredOption("--method <method>", "Auth method: api-key or oauth")
     .option("--label <label>", "Friendly profile label")
     .option("--key <key>", "API key to store")
-    .action(async (provider: string, options: { method: string; label?: string; key?: string }) => {
+    .option("--manual-code", "Paste authorization code instead of waiting for localhost callback")
+    .action(
+      async (
+        provider: string,
+        options: { method: string; label?: string; key?: string; manualCode?: boolean }
+      ) => {
       const store = new AuthProfileStore();
 
+      if (options.method === "oauth") {
+        const config = getOAuthConfig(provider);
+        const state = createOAuthState();
+        const authUrl = buildAuthorizationUrl(config, state);
+        console.log(`Starting OAuth login for ${provider}`);
+        console.log(`Redirect URI: ${config.redirectUri}`);
+        await openAuthorizationUrl(authUrl);
+        console.log(`If the browser does not open, visit:\n${authUrl}`);
+
+        let code: string;
+
+        if (options.manualCode) {
+          code = await promptForAuthorizationCode();
+        } else {
+          const port = Number(new URL(config.redirectUri).port || "9876");
+          try {
+            code = await waitForOAuthCode(port);
+          } catch {
+            console.log("Local callback was not received. Paste the authorization code instead.");
+            code = await promptForAuthorizationCode();
+          }
+        }
+
+        const token = await exchangeAuthorizationCode(config, code);
+        const email = await fetchOAuthEmail(config, token.access_token);
+        const profile = store.saveProfile({
+          type: "oauth",
+          provider,
+          access: token.access_token,
+          refresh: token.refresh_token ?? "",
+          expires: Date.now() + (token.expires_in ?? 3600) * 1000,
+          email
+        });
+
+        console.log(`Saved OAuth profile ${profile.id}`);
+        return;
+      }
+
       if (options.method !== "api-key") {
-        console.error("OAuth flow is not implemented yet. Use --method api-key for now.");
+        console.error("Supported login methods are api-key and oauth.");
         process.exitCode = 1;
         return;
       }
@@ -108,9 +161,13 @@ function registerStatusCommand(command: Command): void {
 
       for (const provider of providers) {
         const active = store.getActiveProfile(provider);
-        console.log(
-          `${provider}: ${active ? `active=${active.id} type=${active.type}` : "not configured"}`
-        );
+        const allProfiles = store.listProfiles(provider);
+        const status = active
+          ? `active=${active.id} type=${active.type}`
+          : allProfiles.length > 0
+            ? `profiles=${allProfiles.length} no active profile`
+            : "not configured";
+        console.log(`${provider}: ${status}`);
       }
     });
 }

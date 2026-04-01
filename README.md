@@ -27,6 +27,27 @@ neuro auth login anthropic --method api-key
 neuro auth login google --method api-key
 ```
 
+OAuth login is also supported:
+
+```bash
+neuro auth login google --method oauth
+neuro auth login openai --method oauth --manual-code
+```
+
+OAuth environment variables:
+
+```bash
+GOOGLE_OAUTH_CLIENT_ID=...
+GOOGLE_OAUTH_CLIENT_SECRET=...
+GOOGLE_OAUTH_REDIRECT_URI=http://127.0.0.1:9876/callback
+
+OPENAI_OAUTH_AUTH_URL=...
+OPENAI_OAUTH_TOKEN_URL=...
+OPENAI_OAUTH_CLIENT_ID=...
+OPENAI_OAUTH_CLIENT_SECRET=...
+OPENAI_OAUTH_REDIRECT_URI=http://127.0.0.1:9876/callback
+```
+
 Profiles are stored in `~/.neurocli/auth-profiles.json`. Config is stored in `~/.neurocli/config.toml`.
 
 ## Install and run
