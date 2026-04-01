@@ -1,12 +1,15 @@
 import { spawnSync } from "node:child_process";
 import fsp from "node:fs/promises";
+import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
 const releaseRoot = path.join(root, "release");
 const stagingRoot = path.join(releaseRoot, "staging");
-const packageName = "neurocli";
-const version = process.env.RELEASE_VERSION || process.env.GITHUB_REF_NAME || "dev";
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const packageName = packageJson.name;
+const version =
+  process.env.RELEASE_VERSION || process.env.GITHUB_REF_NAME || packageJson.version || "dev";
 const platform = process.platform === "win32" ? "windows-x64" : "linux-x64";
 const artifactBase = `${packageName}-${version}-${platform}`;
 const artifactDir = path.join(releaseRoot, artifactBase);
@@ -15,7 +18,7 @@ await fsp.rm(releaseRoot, { recursive: true, force: true });
 await fsp.mkdir(stagingRoot, { recursive: true });
 await fsp.mkdir(artifactDir, { recursive: true });
 
-for (const entry of ["dist", "package.json", "package-lock.json", "README.md"]) {
+for (const entry of ["dist", "package.json", "package-lock.json", "README.md", "LICENSE"]) {
   const source = path.join(root, entry);
   const destination = path.join(stagingRoot, entry);
   await fsp.cp(source, destination, { recursive: true });

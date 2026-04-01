@@ -1,19 +1,46 @@
 {
-  "name": "neurocli",
-  "version": "0.1.0",
+  "name": "neuro-cli",
+  "version": "0.2.0",
   "description": "A professional multi-provider terminal coding agent.",
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qkhalk/NeuroCli.git"
+  },
+  "homepage": "https://github.com/qkhalk/NeuroCli#readme",
+  "bugs": {
+    "url": "https://github.com/qkhalk/NeuroCli/issues"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "coding-agent",
+    "openai",
+    "anthropic",
+    "gemini"
+  ],
   "bin": {
     "neuro": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "dev": "tsx src/index.ts",
     "lint": "eslint .",
+    "prepare:release-notes": "node scripts/release-notes.mjs",
     "release:package": "node scripts/package-release.mjs",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "engines": {
     "node": ">=22.0.0"

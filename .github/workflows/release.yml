@@ -54,14 +54,55 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+      - name: Generate release notes
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: npm run prepare:release-notes
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-notes.md
           files: artifacts/**/*
+
+      - name: Setup Node for npm publish
+        if: env.NPM_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies for npm publish
+        if: env.NPM_TOKEN != ''
+        run: npm ci
+
+      - name: Verify package before npm publish
+        if: env.NPM_TOKEN != ''
+        run: |
+          npm run test
+          npm run lint
+          npm run build
+
+      - name: Publish package to npm
+        if: env.NPM_TOKEN != ''
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

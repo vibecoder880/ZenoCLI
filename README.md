@@ -58,6 +58,13 @@ npm run build
 node dist/index.js --help
 ```
 
+Install globally from npm after publish:
+
+```bash
+npm install -g neuro-cli
+neuro --help
+```
+
 Run the TUI:
 
 ```bash
@@ -143,12 +150,13 @@ The workflow at `.github/workflows/release.yml` builds and verifies the project 
 - Windows
 - Linux
 
-When you push a tag like `v0.1.0`, GitHub Actions will:
+When you push a tag like `v0.2.0`, GitHub Actions will:
 
 1. install dependencies
 2. run tests, lint, and build
 3. package the app for each platform
-4. publish release assets on GitHub
+4. publish release assets on GitHub with changelog-based notes
+5. publish `neuro-cli` to npm if `NPM_TOKEN` is configured in repository secrets
 
 You can also run the packaging step locally:
 
