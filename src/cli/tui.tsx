@@ -7,6 +7,8 @@ import { Prompt } from "./components/Prompt.js";
 import { SlashMenu } from "./components/SlashMenu.js";
 import { createProvider } from "../providers/index.js";
 import type { ChatMessage } from "../providers/base.js";
+import { estimateCostUsd } from "../providers/pricing.js";
+import { selectUsableRoute } from "../providers/router-fallback.js";
 import { filterSlashCommands } from "./slash-commands.js";
 import { loadProjectInstructions } from "../core/context.js";
 import { collectProviderText } from "../core/stream.js";
@@ -37,11 +39,16 @@ function createLine(role: ChatLine["role"], content: string): ChatLine {
 function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps): React.JSX.Element {
   const { exit } = useApp();
   const config = useMemo(() => loadConfig(), []);
-  const route = useMemo(() => resolveModelRoute(config, model, provider), [config, model, provider]);
+  const requestedRoute = useMemo(
+    () => resolveModelRoute(config, model, provider),
+    [config, model, provider]
+  );
+  const [activeRoute, setActiveRoute] = useState(requestedRoute);
   const [input, setInput] = useState(initialPrompt ?? "");
   const [messages, setMessages] = useState<ChatLine[]>([]);
   const [agentLines, setAgentLines] = useState<string[]>(["Ready"]);
   const [tokenCount, setTokenCount] = useState(0);
+  const [sessionCost, setSessionCost] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
   const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
   const slashCommands = useMemo(() => filterSlashCommands(input), [input]);
@@ -115,9 +122,9 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
       if (value === "/model") {
         setAgentLines([
-          `Route source ${route.source}`,
-          `Provider ${route.provider}`,
-          `Model ${route.model}`
+          `Requested ${requestedRoute.provider}/${requestedRoute.model}`,
+          `Active ${activeRoute.provider}/${activeRoute.model}`,
+          `Route source ${activeRoute.source}`
         ]);
         setInput("");
         return;
@@ -149,7 +156,8 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
           `Tracked sessions ${usage.totalEntries}`,
           `Tracked tokens ${usage.totalTokens}`,
           `Tracked cost $${usage.totalEstimatedCostUsd.toFixed(6)}`,
-          `Current session tokens ${tokenCount}`
+          `Current session tokens ${tokenCount}`,
+          `Current session cost $${sessionCost.toFixed(6)}`
         ]);
         setInput("");
         return;
@@ -186,7 +194,17 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
     setIsBusy(true);
     setInput("");
-    setAgentLines(["Preparing request", `Provider ${route.provider}`, `Model ${route.model}`]);
+    const selection = selectUsableRoute(config, undefined, model, provider);
+    const route = selection.route;
+    setActiveRoute(route);
+    setAgentLines(
+      [
+        "Preparing request",
+        selection.warning,
+        `Provider ${route.provider}`,
+        `Model ${route.model}`
+      ].filter((line): line is string => Boolean(line))
+    );
 
     const userLine = createLine("user", value);
     const assistantLine = createLine("assistant", "");
@@ -216,7 +234,13 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       });
 
       setTokenCount((current) => current + result.totalTokens);
-      setAgentLines(["Response complete"]);
+      const requestCost =
+        estimateCostUsd(route.provider, route.model, result.inputTokens, result.outputTokens) ?? 0;
+      setSessionCost((current) => Number((current + requestCost).toFixed(6)));
+      setAgentLines([
+        "Response complete",
+        `Request cost $${requestCost.toFixed(6)}`
+      ]);
       appendHistoryEntry({
         cwd,
         provider: route.provider,
@@ -225,7 +249,8 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         response: result.text,
         totalTokens: result.totalTokens,
         inputTokens: result.inputTokens,
-        outputTokens: result.outputTokens
+        outputTokens: result.outputTokens,
+        estimatedCostUsd: requestCost
       });
       setHistoryCount(listHistoryEntries(200).length);
     } catch (error) {
@@ -250,8 +275,8 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   return (
     <Box flexDirection="column">
       <Header
-        model={route.model}
-        provider={route.provider}
+        model={activeRoute.model}
+        provider={activeRoute.provider}
         tokens={tokenCount}
         historyEntries={historyCount}
       />
@@ -270,7 +295,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         }}
       />
       <Text dimColor>
-        Esc exits the app. Active route: {route.provider}/{route.model}
+        Esc exits the app. Active route: {activeRoute.provider}/{activeRoute.model}
       </Text>
     </Box>
   );
