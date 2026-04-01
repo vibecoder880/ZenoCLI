@@ -8,10 +8,15 @@ import { SlashMenu } from "./components/SlashMenu.js";
 import { createProvider } from "../providers/index.js";
 import type { ChatMessage } from "../providers/base.js";
 import { filterSlashCommands } from "./slash-commands.js";
+import { loadProjectInstructions } from "../core/context.js";
+import { collectProviderText } from "../core/stream.js";
+import { resolveModelRoute } from "../providers/router.js";
+import { loadConfig } from "../storage/config.js";
 
 interface LaunchOptions {
   model: string;
   provider: string;
+  cwd: string;
   initialPrompt?: string;
 }
 
@@ -27,8 +32,10 @@ function createLine(role: ChatLine["role"], content: string): ChatLine {
   };
 }
 
-function ChatApp({ model, provider, initialPrompt, onExit }: ChatAppProps): React.JSX.Element {
+function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps): React.JSX.Element {
   const { exit } = useApp();
+  const config = useMemo(() => loadConfig(), []);
+  const route = useMemo(() => resolveModelRoute(config, model, provider), [config, model, provider]);
   const [input, setInput] = useState(initialPrompt ?? "");
   const [messages, setMessages] = useState<ChatLine[]>([]);
   const [agentLines, setAgentLines] = useState<string[]>(["Ready"]);
@@ -104,7 +111,7 @@ function ChatApp({ model, provider, initialPrompt, onExit }: ChatAppProps): Reac
 
     setIsBusy(true);
     setInput("");
-    setAgentLines(["Preparing request", `Provider ${provider}`, `Model ${model}`]);
+    setAgentLines(["Preparing request", `Provider ${route.provider}`, `Model ${route.model}`]);
 
     const userLine = createLine("user", value);
     const assistantLine = createLine("assistant", "");
@@ -112,40 +119,29 @@ function ChatApp({ model, provider, initialPrompt, onExit }: ChatAppProps): Reac
     setMessages([...nextMessages, assistantLine]);
 
     try {
-      const aiProvider = createProvider(provider);
+      const aiProvider = createProvider(route.provider);
+      const projectInstructions = loadProjectInstructions(cwd);
       const requestMessages: ChatMessage[] = nextMessages.map((message) => ({
         role: message.role,
         content: message.content
       }));
+      const enrichedMessages = [
+        ...(projectInstructions
+          ? [{ role: "system" as const, content: `Project instructions:\n${projectInstructions}` }]
+          : []),
+        ...requestMessages
+      ];
 
-      for await (const event of aiProvider.chat({
-        model,
-        messages: requestMessages
-      })) {
-        if (event.type === "text") {
-          setMessages((current) =>
-            current.map((message) =>
-              message.id === assistantLine.id
-                ? { ...message, content: `${message.content}${event.content}` }
-                : message
-            )
-          );
-        }
+      const result = await collectProviderText(aiProvider, route.model, enrichedMessages, (chunk) => {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantLine.id ? { ...message, content: `${message.content}${chunk}` } : message
+          )
+        );
+      });
 
-        if (event.type === "done") {
-          setTokenCount((current) => current + (event.usage?.totalTokens ?? 0));
-          setAgentLines(["Response complete"]);
-        }
-
-        if (event.type === "error") {
-          setMessages((current) =>
-            current.map((message) =>
-              message.id === assistantLine.id ? { ...message, content: event.message } : message
-            )
-          );
-          setAgentLines([event.message]);
-        }
-      }
+      setTokenCount((current) => current + result.totalTokens);
+      setAgentLines(["Response complete"]);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown provider error";
       setMessages((current) =>
@@ -182,7 +178,9 @@ function ChatApp({ model, provider, initialPrompt, onExit }: ChatAppProps): Reac
           void submitPrompt(value);
         }}
       />
-      <Text dimColor>Esc exits the app. OPENAI_API_KEY is required for Phase 1 chat.</Text>
+      <Text dimColor>
+        Esc exits the app. Active route: {route.provider}/{route.model}
+      </Text>
     </Box>
   );
 }

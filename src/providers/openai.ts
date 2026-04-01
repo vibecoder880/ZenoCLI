@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 import type { AiProvider, ChatRequest, ModelInfo, ProviderStatus, StreamEvent } from "./base.js";
+import { AuthProfileStore } from "../auth/auth-profiles.js";
+import { resolveProviderSecret } from "./shared.js";
 
 export class OpenAiProvider implements AiProvider {
   readonly name = "OpenAI";
@@ -8,9 +10,14 @@ export class OpenAiProvider implements AiProvider {
 
   private readonly client: OpenAI;
 
-  public constructor(apiKey = process.env.OPENAI_API_KEY) {
+  public constructor(
+    store = new AuthProfileStore(),
+    apiKey = resolveProviderSecret(store, "openai", "OPENAI_API_KEY")
+  ) {
     if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is required for Phase 1 chat.");
+      throw new Error(
+        "OpenAI credentials were not found. Use OPENAI_API_KEY or `neuro auth login openai --method api-key`."
+      );
     }
 
     this.client = new OpenAI({ apiKey });
@@ -61,6 +68,11 @@ export class OpenAiProvider implements AiProvider {
       {
         id: "gpt-4.1",
         displayName: "GPT-4.1",
+        provider: this.slug
+      },
+      {
+        id: "gpt-4o-mini",
+        displayName: "GPT-4o mini",
         provider: this.slug
       }
     ];

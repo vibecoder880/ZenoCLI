@@ -1,23 +1,58 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { runAuthCommand } from "./cli/commands/auth.js";
+import { runAgentCommand } from "./cli/commands/agent.js";
+import { registerAuthCommands } from "./cli/commands/auth.js";
+import { runChatCommand } from "./cli/commands/chat.js";
+import { loadConfig } from "./storage/config.js";
 
 const program = new Command();
+const config = loadConfig();
 
 program
   .name("neuro")
   .description("Professional terminal coding agent")
-  .option("-m, --model <model>", "Model to use", process.env.OPENAI_MODEL ?? "gpt-4.1-mini")
-  .option("-p, --provider <provider>", "Provider to use", "openai")
+  .option("-m, --model <model>", "Model or alias to use", process.env.OPENAI_MODEL ?? config.default.model)
+  .option("-p, --provider <provider>", "Provider to use", config.default.provider)
+  .option("--cwd <cwd>", "Working directory", process.cwd())
   .option("--prompt <prompt>", "Run one prompt in the TUI as the initial message");
 
+registerAuthCommands(program);
+
 program
-  .command("auth")
-  .description("Authentication commands")
-  .argument("[action]", "Action to run", "status")
-  .action(async (action) => {
-    await runAuthCommand(action);
+  .command("chat")
+  .description("Run a one-shot chat request")
+  .argument("<prompt>", "Prompt to send")
+  .option("-m, --model <model>", "Model or alias to use")
+  .option("-p, --provider <provider>", "Provider override")
+  .option("--cwd <cwd>", "Working directory", process.cwd())
+  .option("--no-stream", "Disable streaming output")
+  .action(async (prompt: string, options: { model?: string; provider?: string; cwd: string; stream?: boolean }) => {
+    await runChatCommand({
+      prompt,
+      model: options.model,
+      provider: options.provider,
+      cwd: options.cwd,
+      stream: options.stream
+    });
+  });
+
+program
+  .command("agent")
+  .description("Run the local tool-using agent loop")
+  .argument("<task>", "Task to complete")
+  .option("-m, --model <model>", "Model or alias to use")
+  .option("-p, --provider <provider>", "Provider override")
+  .option("--cwd <cwd>", "Working directory", process.cwd())
+  .option("--max-turns <count>", "Maximum reasoning turns", "8")
+  .action(async (task: string, options: { model?: string; provider?: string; cwd: string; maxTurns: string }) => {
+    await runAgentCommand({
+      task,
+      model: options.model,
+      provider: options.provider,
+      cwd: options.cwd,
+      maxTurns: Number(options.maxTurns)
+    });
   });
 
 program.action(async (options) => {
@@ -26,6 +61,7 @@ program.action(async (options) => {
   await launchChatTui({
     model: options.model,
     provider: options.provider,
+    cwd: options.cwd,
     initialPrompt: options.prompt
   });
 });
