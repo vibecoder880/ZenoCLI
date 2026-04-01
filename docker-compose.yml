@@ -1,0 +1,13 @@
+services:
+  neurocli:
+    build: .
+    stdin_open: true
+    tty: true
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+    volumes:
+      - ${USERPROFILE}/.neurocli:/root/.neurocli
+      - .:/workspace
+    working_dir: /workspace
+    command: ["--help"]
