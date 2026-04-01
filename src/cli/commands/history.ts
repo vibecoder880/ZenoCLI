@@ -1,6 +1,6 @@
-import { listHistoryEntries, summarizeTokenUsage } from "../../storage/history.js";
+import { clearHistory, getHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../../storage/history.js";
 
-export function runHistoryCommand(limit = 10): void {
+export function runHistoryListCommand(limit = 10): void {
   const entries = listHistoryEntries(limit);
 
   if (entries.length === 0) {
@@ -16,6 +16,34 @@ export function runHistoryCommand(limit = 10): void {
     console.log(`response: ${entry.response.slice(0, 160)}`);
     console.log("");
   }
+}
+
+export function runHistoryShowCommand(entryId: string): void {
+  const entry = getHistoryEntry(entryId);
+
+  if (!entry) {
+    console.log(`History entry ${entryId} was not found.`);
+    return;
+  }
+
+  console.log(`id: ${entry.id}`);
+  console.log(`createdAt: ${new Date(entry.createdAt).toISOString()}`);
+  console.log(`cwd: ${entry.cwd}`);
+  console.log(`provider: ${entry.provider}`);
+  console.log(`model: ${entry.model}`);
+  console.log(`totalTokens: ${entry.totalTokens}`);
+  console.log(`estimatedCostUsd: ${(entry.estimatedCostUsd ?? 0).toFixed(6)}`);
+  console.log("");
+  console.log("prompt:");
+  console.log(entry.prompt);
+  console.log("");
+  console.log("response:");
+  console.log(entry.response);
+}
+
+export function runHistoryClearCommand(): void {
+  const removed = clearHistory();
+  console.log(`Removed ${removed} history entries.`);
 }
 
 export function runCostCommand(): void {

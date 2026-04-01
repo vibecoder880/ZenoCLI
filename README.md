@@ -86,7 +86,9 @@ node dist/index.js agent "Inspect the project and summarize the highest-risk gap
 Show recent history and tracked token usage:
 
 ```bash
-node dist/index.js history --limit 10
+node dist/index.js history list --limit 10
+node dist/index.js history show <entry-id>
+node dist/index.js history clear
 node dist/index.js cost
 ```
 
@@ -131,8 +133,10 @@ If a project contains `NEURO.md` in the working directory, NeuroCLI injects that
 NeuroCLI stores local chat history in `~/.neurocli/history.json`.
 
 - `history` shows recent entries
+- `history show <id>` prints a full stored exchange
+- `history clear` removes stored exchanges
 - `cost` shows total tracked tokens
-- TUI also supports `/cost`, `/help`, `/model`, `/auth`, `/context`, `/clear`, `/compact`, and `/exit`
+- TUI also supports `/cost`, `/help`, `/model`, `/auth`, `/context`, `/history`, `/clear`, `/compact`, and `/exit`
 
 ## Verification
 

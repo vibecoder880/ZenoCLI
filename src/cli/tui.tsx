@@ -108,7 +108,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       }
 
       if (value === "/help") {
-        setAgentLines(["/help /model /auth /context /clear /cost /compact /exit"]);
+        setAgentLines(["/help /model /auth /context /history /clear /cost /compact /exit"]);
         setInput("");
         return;
       }
@@ -148,8 +148,23 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         setAgentLines([
           `Tracked sessions ${usage.totalEntries}`,
           `Tracked tokens ${usage.totalTokens}`,
+          `Tracked cost $${usage.totalEstimatedCostUsd.toFixed(6)}`,
           `Current session tokens ${tokenCount}`
         ]);
+        setInput("");
+        return;
+      }
+
+      if (value === "/history") {
+        const recent = listHistoryEntries(3);
+        setAgentLines(
+          recent.length > 0
+            ? recent.map(
+                (entry) =>
+                  `${entry.id} ${entry.provider}/${entry.model} ${new Date(entry.createdAt).toLocaleString()}`
+              )
+            : ["No stored history yet."]
+        );
         setInput("");
         return;
       }
@@ -208,7 +223,9 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         model: route.model,
         prompt: value,
         response: result.text,
-        totalTokens: result.totalTokens
+        totalTokens: result.totalTokens,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens
       });
       setHistoryCount(listHistoryEntries(200).length);
     } catch (error) {

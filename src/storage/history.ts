@@ -61,6 +61,17 @@ export function listHistoryEntries(limit = 20): HistoryEntry[] {
   return loadHistoryStore().entries.slice(0, limit);
 }
 
+export function getHistoryEntry(entryId: string): HistoryEntry | undefined {
+  return loadHistoryStore().entries.find((entry) => entry.id === entryId);
+}
+
+export function clearHistory(): number {
+  const store = loadHistoryStore();
+  const count = store.entries.length;
+  saveHistoryStore({ entries: [] });
+  return count;
+}
+
 export function summarizeTokenUsage(): {
   totalEntries: number;
   totalTokens: number;

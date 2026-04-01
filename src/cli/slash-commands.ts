@@ -8,6 +8,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/model", description: "Switch active model" },
   { command: "/auth", description: "Manage provider login" },
   { command: "/clear", description: "Clear conversation" },
+  { command: "/history", description: "Show recent history" },
   { command: "/cost", description: "Show token usage" },
   { command: "/context", description: "Set file context" },
   { command: "/compact", description: "Summarize history" },

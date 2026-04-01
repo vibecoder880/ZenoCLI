@@ -10,7 +10,12 @@ import {
   runContextSetCommand,
   runContextShowCommand
 } from "./cli/commands/context.js";
-import { runCostCommand, runHistoryCommand } from "./cli/commands/history.js";
+import {
+  runCostCommand,
+  runHistoryClearCommand,
+  runHistoryListCommand,
+  runHistoryShowCommand
+} from "./cli/commands/history.js";
 import { runHealthCommand, runModelsCommand } from "./cli/commands/providers.js";
 import { loadConfig } from "./storage/config.js";
 
@@ -65,10 +70,27 @@ program
 
 program
   .command("history")
-  .description("Show recent chat history")
+  .description("Inspect stored chat history")
+  .argument("[action]", "list, show, or clear", "list")
+  .argument("[entryId]", "History entry id for show")
   .option("--limit <count>", "Maximum entries to show", "10")
-  .action((options: { limit: string }) => {
-    runHistoryCommand(Number(options.limit));
+  .action((action: string, entryId: string | undefined, options: { limit: string }) => {
+    if (action === "list") {
+      runHistoryListCommand(Number(options.limit));
+      return;
+    }
+
+    if (action === "show" && entryId) {
+      runHistoryShowCommand(entryId);
+      return;
+    }
+
+    if (action === "clear") {
+      runHistoryClearCommand();
+      return;
+    }
+
+    throw new Error("Usage: neuro history list|show <id>|clear [--limit <count>]");
   });
 
 program
