@@ -31,7 +31,9 @@ program
   .option("-m, --model <model>", "Model or alias to use", process.env.OPENAI_MODEL ?? config.default.model)
   .option("-p, --provider <provider>", "Provider to use", config.default.provider)
   .option("--cwd <cwd>", "Working directory", process.cwd())
-  .option("--prompt <prompt>", "Run one prompt in the TUI as the initial message");
+  .option("--prompt <prompt>", "Run one prompt in the TUI as the initial message")
+  .option("--continue", "Resume the last session")
+  .option("--resume <sessionId>", "Resume a specific session by ID");
 
 registerAuthCommands(program);
 
@@ -193,7 +195,9 @@ program.action(async (options) => {
     model: options.model,
     provider: options.provider,
     cwd: options.cwd,
-    initialPrompt: options.prompt
+    initialPrompt: options.prompt,
+    continueSession: Boolean(options.continue),
+    resumeSessionId: options.resume,
   });
 });
 

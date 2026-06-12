@@ -1,34 +1,49 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Box, Text, render, useApp, useInput } from "ink";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Box, render, useApp, useInput } from "ink";
 import { AgentStatus } from "./components/AgentStatus.js";
 import { Header } from "./components/Header.js";
 import { MessageList, type ChatLine } from "./components/MessageList.js";
-import { Prompt } from "./components/Prompt.js";
+import { Footer } from "./components/Footer.js";
 import { SlashMenu } from "./components/SlashMenu.js";
-import { AuthProfileStore } from "../auth/auth-profiles.js";
+import { Prompt } from "./components/Prompt.js";
+import { WelcomeBanner } from "./components/WelcomeBanner.js";
+import { useFirstRun } from "./hooks/useFirstRun.js";
+import { AuthProfileStore, listMissingProviders } from "../auth/auth-profiles.js";
 import { createProvider } from "../providers/index.js";
 import type { ChatMessage } from "../providers/base.js";
 import { estimateCostUsd } from "../providers/pricing.js";
 import { selectUsableRoute } from "../providers/router-fallback.js";
 import { filterSlashCommands, findSlashCommand, SLASH_COMMANDS } from "./slash-commands.js";
-import { loadProjectInstructions } from "../core/context.js";
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
 import { getConfigPathname, loadConfig } from "../storage/config.js";
 import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../storage/history.js";
-import { getProjectInstructionsPath } from "../storage/paths.js";
 import { listProviderCatalog, tryCreateProvider } from "../providers/index.js";
+import { ContextManager } from "../core/context-manager.js";
+import { getMergedInstructions, getInstructionsSummary } from "../core/neuro-md.js";
+import { getMemorySummary, loadMemory, readFullMemory } from "../core/memory.js";
+import { SessionWriter, listSessions, forkSession } from "../core/session.js";
+import { runAgentLoop, type AgentEvent } from "../agent/loop.js";
+import { CheckpointManager } from "../safety/checkpoints.js";
+import { ALL_PERMISSION_MODES, nextPermissionMode, permissionModeLabel, type PermissionMode } from "../safety/permissions.js";
 
 interface LaunchOptions {
   model: string;
   provider: string;
   cwd: string;
   initialPrompt?: string;
+  /** Resume a previous session. */
+  continueSession?: boolean;
+  /** Resume a specific session by ID. */
+  resumeSessionId?: string;
 }
 
 interface ChatAppProps extends LaunchOptions {
   onExit: () => void;
 }
+
+type AppMode = "chat" | "agent";
+type ScreenMode = "welcome" | "chat";
 
 function createLine(role: ChatLine["role"], content: string): ChatLine {
   return {
@@ -52,15 +67,83 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   const [tokenCount, setTokenCount] = useState(0);
   const [sessionCost, setSessionCost] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
+  const [mode, setMode] = useState<AppMode>("chat");
+  const [screen, setScreen] = useState<ScreenMode>("welcome");
   const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
+  const [permissionMode, setPermissionMode] = useState<PermissionMode>(config.permission?.mode ?? "default");
+  const [version, setVersion] = useState("0.0.0");
   const slashCommands = useMemo(() => filterSlashCommands(input), [input]);
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
+
+  // Context manager and session (persisted across turns)
+  const contextManagerRef = useRef<ContextManager | null>(null);
+  const sessionRef = useRef<SessionWriter | null>(null);
+  const pendingMessagesRef = useRef<string[]>([]);
+  const checkpointsRef = useRef<CheckpointManager>(new CheckpointManager());
+
+  // First-run detection
+  const firstRun = useFirstRun(config);
+  const missingProviders = useMemo(() => listMissingProviders(), []);
+  const providerStatus = useMemo(() => {
+    const store = new AuthProfileStore();
+    return ["openai", "anthropic", "google"].map((slug) => ({
+      slug,
+      status: store.getActiveProfile(slug) ? ("ok" as const) : ("missing" as const)
+    }));
+  }, []);
 
   useEffect(() => {
     setSelectedSlashIndex(0);
   }, [slashCommands.length]);
 
-  const executeSlashCommand = async (value: string): Promise<boolean> => {
+  // Read package version once
+  useEffect(() => {
+    void import("../../package.json", { with: { type: "json" } })
+      .then((pkg) => setVersion((pkg as { default: { version: string } }).default.version))
+      .catch(() => undefined);
+  }, []);
+
+  // Initialize session and context on mount
+  useEffect(() => {
+    const selection = selectUsableRoute(config, undefined, model, provider);
+    const route = selection.route;
+    setActiveRoute(route);
+
+    const session = new SessionWriter(cwd, route.model, route.provider);
+    sessionRef.current = session;
+
+    const ctx = new ContextManager(config.context.maxTokens);
+    contextManagerRef.current = ctx;
+
+    const memory = loadMemory(cwd);
+    if (memory) {
+      ctx.addSystem(`Memory:\n${memory}`);
+    }
+
+    const instructions = getMergedInstructions(cwd);
+    if (instructions) {
+      ctx.addSystem(`Project instructions:\n${instructions}`);
+    }
+
+    session.append({
+      type: "system",
+      content: "Session started",
+      timestamp: new Date().toISOString()
+    });
+
+    setAgentLines([
+      `Session ${session.id}`,
+      `Provider ${route.provider}/${route.model}`,
+      selection.warning,
+      "Ready. Type a prompt or /help for commands."
+    ].filter((line): line is string => Boolean(line)));
+
+    return () => {
+      session.close();
+    };
+  }, []);
+
+  const executeSlashCommand = useCallback(async (value: string): Promise<boolean> => {
     const command = findSlashCommand(value);
 
     if (!command) {
@@ -68,6 +151,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     }
 
     if (command.command === "/exit") {
+      sessionRef.current?.close();
       exit();
       onExit();
       return true;
@@ -75,19 +159,28 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
     if (command.command === "/clear") {
       setMessages([]);
+      contextManagerRef.current = new ContextManager(config.context.maxTokens);
       setAgentLines(["Conversation cleared"]);
       setInput("");
       return true;
     }
 
     if (command.command === "/help") {
-      setAgentLines([SLASH_COMMANDS.map((entry) => entry.command).join(" ")]);
+      setAgentLines([SLASH_COMMANDS.map((entry) => entry.command).join("  ")]);
       setInput("");
       return true;
     }
 
     if (command.command === "/chat") {
-      setAgentLines(["Chat mode is active. Type any prompt and press Enter."]);
+      setMode("chat");
+      setAgentLines(["Switched to chat mode."]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/agent") {
+      setMode("agent");
+      setAgentLines(["Switched to agent mode — autonomous task execution."]);
       setInput("");
       return true;
     }
@@ -95,17 +188,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     if (command.command === "/init") {
       setAgentLines([
         "Workspace bootstrap runs from the terminal command.",
-        "Run: neuro init",
-        "That creates NEURO.md and .env.example in the current workspace."
-      ]);
-      setInput("");
-      return true;
-    }
-
-    if (command.command === "/agent") {
-      setAgentLines([
-        "Agent mode runs from the terminal command.",
-        "Run: neuro agent \"your task\""
+        "Run: neuro init"
       ]);
       setInput("");
       return true;
@@ -201,8 +284,36 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         `Config path ${getConfigPathname()}`,
         `default.model ${config.default.model}`,
         `default.provider ${config.default.provider}`,
-        `default.streaming ${config.default.streaming}`
+        `default.streaming ${config.default.streaming}`,
+        `Permission mode: ${permissionModeLabel(permissionMode)}`
       ]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/permission") {
+      const idx = ALL_PERMISSION_MODES.indexOf(permissionMode);
+      const next = ALL_PERMISSION_MODES[(idx + 1) % ALL_PERMISSION_MODES.length];
+      setPermissionMode(next);
+      setAgentLines([
+        `Permission mode: ${permissionModeLabel(permissionMode)}`,
+        `Switched to: ${permissionModeLabel(next)}`,
+        `Tip: also cycle with Shift+Tab during prompts`
+      ]);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/undo") {
+      const result = checkpointsRef.current.undo();
+      if (result) {
+        setAgentLines([
+          `Undo: ${result.checkpoint.toolName} → ${result.checkpoint.filePath}`,
+          `Restored previous content (${result.checkpoint.previousContent?.length ?? 0} chars)`
+        ]);
+      } else {
+        setAgentLines(["No checkpoints to undo."]);
+      }
       setInput("");
       return true;
     }
@@ -214,36 +325,126 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     }
 
     if (command.command === "/context") {
-      const instructions = loadProjectInstructions(cwd);
-      setAgentLines(
-        instructions
-          ? [`Context file ${getProjectInstructionsPath(cwd)}`, instructions.slice(0, 200)]
-          : [`No NEURO.md found at ${getProjectInstructionsPath(cwd)}`]
-      );
+      const ctx = contextManagerRef.current;
+      if (ctx) {
+        const instructions = getInstructionsSummary(cwd);
+        setAgentLines([ctx.getSummary(), "", instructions]);
+      } else {
+        const instructions = getMergedInstructions(cwd);
+        setAgentLines(
+          instructions
+            ? [`Instructions loaded (${instructions.length} bytes)`, instructions.slice(0, 300)]
+            : [`No NEURO.md found`]
+        );
+      }
       setInput("");
       return true;
     }
 
     if (command.command === "/compact") {
-      const compactText = messages
-        .slice(-6)
-        .map((message) => `${message.role}: ${message.content.slice(0, 80)}`)
-        .join(" | ");
-      setAgentLines([compactText || "Conversation is empty."]);
+      const ctx = contextManagerRef.current;
+      if (ctx) {
+        const result = ctx.compact();
+        setAgentLines([
+          result.compacted
+            ? `Compacted: ${result.tokensFreed} tokens freed (${result.tokensBefore} → ${result.tokensAfter})`
+            : "No compaction needed.",
+          ctx.getSummary()
+        ]);
+      } else {
+        const compactText = messages
+          .slice(-6)
+          .map((message) => `${message.role}: ${message.content.slice(0, 80)}`)
+          .join(" | ");
+        setAgentLines([compactText || "Conversation is empty."]);
+      }
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/memory") {
+      const summary = getMemorySummary(cwd);
+      const full = readFullMemory(cwd);
+      const lines = [summary];
+      if (full.project) {
+        lines.push("", "--- Project Memory ---", full.project.slice(0, 500));
+      }
+      if (full.global) {
+        lines.push("", "--- Global Memory ---", full.global.slice(0, 300));
+      }
+      setAgentLines(lines);
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/resume") {
+      const sessions = listSessions(cwd);
+      if (sessions.length === 0) {
+        setAgentLines(["No previous sessions found."]);
+      } else {
+        const recent = sessions.slice(0, 5);
+        setAgentLines([
+          "Recent sessions:",
+          ...recent.map((s) => `  ${s.id} (${s.model}, ${s.entryCount} entries, ${new Date(s.updatedAt).toLocaleString()})`),
+          "Use: neuro --resume <id> to resume a session."
+        ]);
+      }
+      setInput("");
+      return true;
+    }
+
+    if (command.command === "/fork") {
+      const session = sessionRef.current;
+      if (session) {
+        try {
+          const forked = forkSession(session.id, cwd);
+          sessionRef.current = forked;
+          setAgentLines([`Session forked: ${forked.id}`]);
+        } catch (err) {
+          setAgentLines([`Fork failed: ${err instanceof Error ? err.message : String(err)}`]);
+        }
+      }
       setInput("");
       return true;
     }
 
     return false;
-  };
+  }, [activeRoute, config, cwd, exit, messages, model, onExit, permissionMode, provider, requestedRoute, sessionCost, tokenCount]);
 
-  useInput((_, key) => {
-    if (slashCommands.length === 0) {
-      if (key.escape) {
+  useInput((inputChar, key) => {
+    if (isBusy && !key.escape) return;
+
+    // Esc: dismiss welcome or exit
+    if (key.escape) {
+      if (screen === "welcome") {
+        setScreen("chat");
+        return;
+      }
+      if (isBusy) {
+        pendingMessagesRef.current.push("[interrupt]");
+      } else {
+        sessionRef.current?.close();
         exit();
         onExit();
       }
+      return;
+    }
 
+    // Shift+Tab: cycle permission mode
+    if (key.tab && key.shift) {
+      setPermissionMode((current) => {
+        const next = nextPermissionMode(current);
+        setAgentLines([
+          permissionModeLabel(current),
+          "Switched to: " + permissionModeLabel(next),
+          "Tip: use /permission to cycle too"
+        ]);
+        return next;
+      });
+      return;
+    }
+
+    if (slashCommands.length === 0) {
       return;
     }
 
@@ -261,11 +462,6 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       return;
     }
 
-    if (key.escape) {
-      setInput("");
-      return;
-    }
-
     if (key.tab) {
       const selected = slashCommands[selectedSlashIndex];
       setInput(selected.command);
@@ -278,7 +474,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     }
   });
 
-  const submitPrompt = async (rawValue: string): Promise<void> => {
+  const submitPrompt = useCallback(async (rawValue: string): Promise<void> => {
     const value = rawValue.trim();
 
     if (!value || isBusy) {
@@ -291,90 +487,186 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         return;
       }
 
-      setAgentLines([`Command ${value} is reserved for a later phase.`]);
+      setAgentLines([`Unknown command: ${value}. Type /help for available commands.`]);
       setInput("");
       return;
     }
 
+    // Dismiss welcome on first prompt
+    if (screen === "welcome") {
+      setScreen("chat");
+    }
+
     setIsBusy(true);
     setInput("");
+
     const selection = selectUsableRoute(config, undefined, model, provider);
     const route = selection.route;
     setActiveRoute(route);
-    setAgentLines(
-      [
-        "Preparing request",
-        selection.warning,
-        `Provider ${route.provider}`,
-        `Model ${route.model}`
-      ].filter((line): line is string => Boolean(line))
-    );
 
     const userLine = createLine("user", value);
-    const assistantLine = createLine("assistant", "");
-    const nextMessages = [...messages, userLine];
-    setMessages([...nextMessages, assistantLine]);
+    setMessages((prev) => [...prev, userLine]);
 
     try {
       const aiProvider = createProvider(route.provider);
-      const projectInstructions = loadProjectInstructions(cwd);
-      const requestMessages: ChatMessage[] = nextMessages.map((message) => ({
-        role: message.role,
-        content: message.content
-      }));
-      const enrichedMessages = [
-        ...(projectInstructions
-          ? [{ role: "system" as const, content: `Project instructions:\n${projectInstructions}` }]
-          : []),
-        ...requestMessages
-      ];
 
-      const result = await collectProviderText(aiProvider, route.model, enrichedMessages, (chunk) => {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === assistantLine.id ? { ...message, content: `${message.content}${chunk}` } : message
-          )
-        );
-      });
+      if (mode === "agent") {
+        setAgentLines([
+          `Agent: ${route.provider}/${route.model}`,
+          "Working..."
+        ]);
 
-      setTokenCount((current) => current + result.totalTokens);
-      const requestCost =
-        estimateCostUsd(route.provider, route.model, result.inputTokens, result.outputTokens) ?? 0;
-      setSessionCost((current) => Number((current + requestCost).toFixed(6)));
-      setAgentLines([
-        "Response complete",
-        `Request cost $${requestCost.toFixed(6)}`
-      ]);
-      appendHistoryEntry({
-        cwd,
-        provider: route.provider,
-        model: route.model,
-        prompt: value,
-        response: result.text,
-        totalTokens: result.totalTokens,
-        inputTokens: result.inputTokens,
-        outputTokens: result.outputTokens,
-        estimatedCostUsd: requestCost
-      });
+        const result = await runAgentLoop({
+          provider: aiProvider,
+          model: route.model,
+          task: value,
+          toolContext: {
+            cwd,
+            ignore: config.context.ignore,
+            askUser: async (question: string) => `[User asked: ${question}]`
+          },
+          contextManager: contextManagerRef.current ?? undefined,
+          session: sessionRef.current ?? undefined,
+          permission: { mode: permissionMode, autoApprove: config.permission?.autoApprove ?? {} },
+          checkpoints: checkpointsRef.current,
+          onPermissionPrompt: async () => true,
+          onEvent: (event: AgentEvent) => {
+            switch (event.type) {
+              case "tool_start":
+                setAgentLines([`> ${event.toolName}`, event.content]);
+                break;
+              case "tool_result":
+                setAgentLines([`+ ${event.toolName}`, event.content.slice(0, 200)]);
+                break;
+              case "compact":
+                setAgentLines(["Context compacted", event.content]);
+                break;
+              case "final":
+                setAgentLines(["Response complete", event.tokens ? `${event.tokens} tokens` : ""]);
+                break;
+              case "error":
+                setAgentLines([`✗ Error: ${event.content}`]);
+                break;
+              case "permission":
+                setAgentLines([`🔒 ${event.content}`]);
+                break;
+              case "checkpoint":
+                setAgentLines([`💾 ${event.content}`]);
+                break;
+            }
+          },
+          onStream: (chunk) => {
+            setMessages((prev) => {
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg && lastMsg.role === "assistant") {
+                return [
+                  ...prev.slice(0, -1),
+                  { ...lastMsg, content: lastMsg.content + chunk }
+                ];
+              }
+              const assistantLine = createLine("assistant", chunk);
+              return [...prev, assistantLine];
+            });
+          },
+          pendingUserMessages: pendingMessagesRef.current
+        });
+
+        const responseLine = createLine("assistant", result.message);
+        setMessages((prev) => [...prev, responseLine]);
+        setTokenCount((current) => current + result.totalTokens);
+
+        const requestCost =
+          estimateCostUsd(route.provider, route.model, result.totalTokens, result.totalTokens / 2) ?? 0;
+        setSessionCost((current) => Number((current + requestCost).toFixed(6)));
+
+        setAgentLines([
+          `Done in ${result.turns} turns`,
+          `Tools used: ${result.toolsUsed.join(", ") || "none"}`,
+          `Tokens: ${result.totalTokens}`
+        ]);
+
+        appendHistoryEntry({
+          cwd,
+          provider: route.provider,
+          model: route.model,
+          prompt: value,
+          response: result.message,
+          totalTokens: result.totalTokens,
+          inputTokens: result.totalTokens,
+          outputTokens: result.totalTokens,
+          estimatedCostUsd: requestCost
+        });
+      } else {
+        setAgentLines([
+          "Preparing request",
+          selection.warning,
+          `Provider ${route.provider}`,
+          `Model ${route.model}`
+        ].filter((line): line is string => Boolean(line)));
+
+        const assistantLine = createLine("assistant", "");
+        setMessages((prev) => [...prev, assistantLine]);
+
+        const projectInstructions = getMergedInstructions(cwd);
+        const memoryContent = loadMemory(cwd);
+
+        const enrichedMessages: ChatMessage[] = [
+          ...(projectInstructions
+            ? [{ role: "system" as const, content: `Project instructions:\n${projectInstructions}` }]
+            : []),
+          ...(memoryContent
+            ? [{ role: "system" as const, content: `Memory:\n${memoryContent}` }]
+            : []),
+          ...[userLine].map((m) => ({ role: m.role, content: m.content }))
+        ];
+
+        const result = await collectProviderText(aiProvider, route.model, enrichedMessages, (chunk) => {
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantLine.id ? { ...message, content: `${message.content}${chunk}` } : message
+            )
+          );
+        });
+
+        setTokenCount((current) => current + result.totalTokens);
+        const requestCost =
+          estimateCostUsd(route.provider, route.model, result.inputTokens, result.outputTokens) ?? 0;
+        setSessionCost((current) => Number((current + requestCost).toFixed(6)));
+        setAgentLines([
+          "Response complete",
+          `Request cost $${requestCost.toFixed(6)}`
+        ]);
+        appendHistoryEntry({
+          cwd,
+          provider: route.provider,
+          model: route.model,
+          prompt: value,
+          response: result.text,
+          totalTokens: result.totalTokens,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+          estimatedCostUsd: requestCost
+        });
+      }
+
       setHistoryCount(listHistoryEntries(200).length);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown provider error";
-      setMessages((current) =>
-        current.map((entry) =>
-          entry.id === assistantLine.id ? { ...entry, content: message } : entry
-        )
-      );
-      setAgentLines([message]);
+      const errorLine = createLine("assistant", `Error: ${message}`);
+      setMessages((prev) => [...prev, errorLine]);
+      setAgentLines([`✗ ${message}`]);
     } finally {
       setIsBusy(false);
     }
-  };
+  }, [activeRoute, config, cwd, executeSlashCommand, isBusy, messages, mode, model, provider, screen, sessionCost, tokenCount]);
 
   useEffect(() => {
     if (initialPrompt) {
       void submitPrompt(initialPrompt);
     }
   }, []);
+
+  const showWelcome = screen === "welcome" && firstRun.isFirstRun;
 
   return (
     <Box flexDirection="column">
@@ -383,7 +675,19 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         provider={activeRoute.provider}
         tokens={tokenCount}
         historyEntries={historyCount}
+        sessionId={sessionRef.current?.id ?? "loading"}
+        mode={mode}
+        permissionMode={permissionModeLabel(permissionMode)}
+        sessionCost={sessionCost}
       />
+      {showWelcome ? (
+        <WelcomeBanner
+          version={version}
+          cwd={cwd}
+          providers={providerStatus}
+          missingProviders={missingProviders}
+        />
+      ) : null}
       <AgentStatus lines={agentLines} />
       <MessageList messages={messages} />
       {input.startsWith("/") ? (
@@ -391,16 +695,14 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       ) : null}
       <Prompt
         value={input}
-        placeholder={isBusy ? "Waiting for response..." : "Ask NeuroCLI to help"}
+        placeholder={isBusy ? "Working... (Esc to interrupt)" : `Ask NeuroCLI to help (${mode} mode)`}
         disabled={isBusy}
         onChange={setInput}
         onSubmit={(value) => {
           void submitPrompt(value);
         }}
       />
-      <Text dimColor>
-        Esc exits the app. Active route: {activeRoute.provider}/{activeRoute.model}
-      </Text>
+      <Footer isBusy={isBusy} isMultiLine={input.includes("\n")} />
     </Box>
   );
 }

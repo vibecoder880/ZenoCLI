@@ -14,6 +14,26 @@ export interface NeuroConfig {
     maxTokens: number;
     ignore: string[];
   };
+  permission?: {
+    /** Default permission mode. */
+    mode?: "default" | "acceptEdits" | "plan" | "auto" | "dontAsk" | "bypassPermissions";
+    /** Per-tool auto-approve rules. */
+    autoApprove?: Record<string, boolean>;
+  };
+  mcp?: {
+    servers: Record<string, {
+      command: string;
+      args?: string[];
+      env?: Record<string, string>;
+    }>;
+  };
+  hooks?: {
+    PreToolUse?: Array<{ match?: string; command?: string; prompt?: string }>;
+    PostToolUse?: Array<{ match?: string; command?: string; prompt?: string }>;
+    SessionStart?: Array<{ command?: string; prompt?: string }>;
+    SessionEnd?: Array<{ command?: string; prompt?: string }>;
+    Notification?: Array<{ command?: string; prompt?: string }>;
+  };
 }
 
 export const DEFAULT_CONFIG: NeuroConfig = {
@@ -30,6 +50,17 @@ export const DEFAULT_CONFIG: NeuroConfig = {
   context: {
     maxTokens: 100_000,
     ignore: ["node_modules", ".git", "dist"]
+  },
+  permission: {
+    mode: "default",
+    autoApprove: {}
+  },
+  mcp: {
+    servers: {}
+  },
+  hooks: {
+    PreToolUse: [],
+    PostToolUse: []
   }
 };
 
@@ -50,6 +81,34 @@ function mergeConfig(partial: Partial<NeuroConfig> | undefined): NeuroConfig {
     context: {
       ...DEFAULT_CONFIG.context,
       ...(partial?.context ?? {})
+    },
+    permission: {
+      ...DEFAULT_CONFIG.permission,
+      ...(partial?.permission ?? {}),
+      autoApprove: {
+        ...(DEFAULT_CONFIG.permission?.autoApprove ?? {}),
+        ...(partial?.permission?.autoApprove ?? {})
+      }
+    },
+    mcp: {
+      ...DEFAULT_CONFIG.mcp,
+      ...(partial?.mcp ?? {}),
+      servers: {
+        ...(DEFAULT_CONFIG.mcp?.servers ?? {}),
+        ...(partial?.mcp?.servers ?? {})
+      }
+    },
+    hooks: {
+      ...DEFAULT_CONFIG.hooks,
+      ...(partial?.hooks ?? {}),
+      PreToolUse: [
+        ...(DEFAULT_CONFIG.hooks?.PreToolUse ?? []),
+        ...(partial?.hooks?.PreToolUse ?? [])
+      ],
+      PostToolUse: [
+        ...(DEFAULT_CONFIG.hooks?.PostToolUse ?? []),
+        ...(partial?.hooks?.PostToolUse ?? [])
+      ]
     }
   };
 }

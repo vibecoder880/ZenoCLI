@@ -22,22 +22,32 @@ export class GoogleProvider implements AiProvider {
   }
 
   public async *chat(request: ChatRequest): AsyncIterable<StreamEvent> {
+    // Build Google function declarations if tools are provided
+    const tools = request.tools?.length
+      ? [{
+          functionDeclarations: request.tools.map((tool) => ({
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters as Record<string, unknown>,
+          })),
+        }]
+      : undefined;
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${request.model}:generateContent?key=${this.apiKey}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           systemInstruction: this.toSystemInstruction(request),
           contents: request.messages
             .filter((message) => message.role !== "system")
             .map((message) => ({
               role: message.role === "assistant" ? "model" : "user",
-              parts: [{ text: message.content }]
-            }))
-        })
+              parts: [{ text: message.content }],
+            })),
+          ...(tools ? { tools } : {}),
+        }),
       }
     );
 
@@ -47,7 +57,14 @@ export class GoogleProvider implements AiProvider {
     }
 
     const payload = (await response.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      candidates?: Array<{
+        content?: {
+          parts?: Array<
+            | { text?: string }
+            | { functionCall?: { name: string; args: Record<string, unknown> } }
+          >;
+        };
+      }>;
       usageMetadata?: {
         promptTokenCount?: number;
         candidatesTokenCount?: number;
@@ -55,14 +72,22 @@ export class GoogleProvider implements AiProvider {
       };
     };
 
-    const text =
-      payload.candidates
-        ?.flatMap((candidate) => candidate.content?.parts ?? [])
-        .map((part) => part.text ?? "")
-        .join("") ?? "";
+    // Process response parts
+    const parts = payload.candidates?.[0]?.content?.parts ?? [];
 
-    if (text) {
-      yield { type: "text", content: text };
+    for (const part of parts) {
+      if ("text" in part && part.text) {
+        yield { type: "text", content: part.text };
+      }
+
+      if ("functionCall" in part && part.functionCall) {
+        yield {
+          type: "tool_call",
+          id: `google_${part.functionCall.name}`,
+          name: part.functionCall.name,
+          arguments: JSON.stringify(part.functionCall.args),
+        };
+      }
     }
 
     yield {
@@ -70,8 +95,8 @@ export class GoogleProvider implements AiProvider {
       usage: {
         inputTokens: payload.usageMetadata?.promptTokenCount,
         outputTokens: payload.usageMetadata?.candidatesTokenCount,
-        totalTokens: payload.usageMetadata?.totalTokenCount
-      }
+        totalTokens: payload.usageMetadata?.totalTokenCount,
+      },
     };
   }
 
@@ -94,8 +119,13 @@ export class GoogleProvider implements AiProvider {
       {
         id: "gemini-2.5-pro",
         displayName: "Gemini 2.5 Pro",
-        provider: this.slug
-      }
+        provider: this.slug,
+      },
+      {
+        id: "gemini-2.5-flash",
+        displayName: "Gemini 2.5 Flash",
+        provider: this.slug,
+      },
     ];
   }
 

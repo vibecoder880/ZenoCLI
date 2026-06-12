@@ -23,37 +23,80 @@ export class AnthropicProvider implements AiProvider {
   }
 
   public async *chat(request: ChatRequest): AsyncIterable<StreamEvent> {
-    const response = await this.client.messages.create({
+    const systemContent = request.messages
+      .filter((message) => message.role === "system")
+      .map((message) => message.content)
+      .join("\n\n");
+
+    const apiMessages = request.messages
+      .filter((message) => message.role !== "system")
+      .map((message) => ({
+        role: message.role === "assistant" ? "assistant" as const : "user" as const,
+        content: message.content,
+      }));
+
+    // Build Anthropic tools format if tools are provided
+    const tools = request.tools?.map((tool): Anthropic.Messages.Tool => ({
+      name: tool.name,
+      description: tool.description,
+      input_schema: tool.parameters as Anthropic.Messages.Tool.InputSchema,
+    }));
+
+    // Use streaming for real-time output
+    const stream = this.client.messages.stream({
       model: request.model,
-      max_tokens: 4096,
-      messages: request.messages
-        .filter((message) => message.role !== "system")
-        .map((message) => ({
-          role: message.role === "assistant" ? "assistant" : "user",
-          content: message.content
-        })),
-      system: request.messages
-        .filter((message) => message.role === "system")
-        .map((message) => message.content)
-        .join("\n\n")
+      max_tokens: 8192,
+      system: systemContent || undefined,
+      messages: apiMessages,
+      ...(tools && tools.length > 0 ? { tools } : {}),
     });
 
-    const text = response.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("");
+    let inputTokens = 0;
+    let outputTokens = 0;
 
-    if (text) {
-      yield { type: "text", content: text };
+    for await (const event of stream) {
+      if (event.type === "content_block_delta") {
+        if (event.delta.type === "text_delta") {
+          yield { type: "text", content: event.delta.text };
+        }
+        if (event.delta.type === "input_json_delta") {
+          // Tool call arguments streaming in
+          yield {
+            type: "tool_call",
+            id: "",  // Will be filled from content_block_start
+            name: "",
+            arguments: event.delta.partial_json,
+          };
+        }
+      }
+
+      if (event.type === "content_block_start") {
+        if (event.content_block.type === "tool_use") {
+          yield {
+            type: "tool_call",
+            id: event.content_block.id,
+            name: event.content_block.name,
+            arguments: "",
+          };
+        }
+      }
+
+      if (event.type === "message_start" && event.message.usage) {
+        inputTokens = event.message.usage.input_tokens;
+      }
+
+      if (event.type === "message_delta" && event.usage) {
+        outputTokens = event.usage.output_tokens;
+      }
     }
 
     yield {
       type: "done",
       usage: {
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        totalTokens: response.usage.input_tokens + response.usage.output_tokens
-      }
+        inputTokens,
+        outputTokens,
+        totalTokens: inputTokens + outputTokens,
+      },
     };
   }
 
@@ -62,8 +105,8 @@ export class AnthropicProvider implements AiProvider {
       {
         id: "claude-sonnet-4-0",
         displayName: "Claude Sonnet 4",
-        provider: this.slug
-      }
+        provider: this.slug,
+      },
     ];
   }
 

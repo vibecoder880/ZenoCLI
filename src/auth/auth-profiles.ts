@@ -213,3 +213,25 @@ export function isProfileExpired(profile: StoredAuthProfile, now = Date.now()): 
 
   return false;
 }
+
+export const KNOWN_PROVIDERS = ["openai", "anthropic", "google"] as const;
+export type KnownProvider = (typeof KNOWN_PROVIDERS)[number];
+
+export function hasAnyActiveProfile(providers: readonly string[] = KNOWN_PROVIDERS): boolean {
+  const store = new AuthProfileStore();
+  for (const provider of providers) {
+    const profile = store.getActiveProfile(provider);
+    if (profile && !isProfileExpired(profile)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function listMissingProviders(providers: readonly string[] = KNOWN_PROVIDERS): string[] {
+  const store = new AuthProfileStore();
+  return providers.filter((provider) => {
+    const profile = store.getActiveProfile(provider);
+    return !profile || isProfileExpired(profile);
+  });
+}

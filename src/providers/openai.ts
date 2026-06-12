@@ -28,17 +28,41 @@ export class OpenAiProvider implements AiProvider {
     let outputTokens: number | undefined;
     let totalTokens: number | undefined;
 
+    // Build OpenAI tools format if tools are provided
+    const tools = request.tools?.map((tool) => ({
+      type: "function" as const,
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+      },
+    }));
+
     const stream = await this.client.chat.completions.create({
       model: request.model,
-      messages: request.messages,
-      stream: true
+      messages: request.messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      stream: true,
+      ...(tools && tools.length > 0 ? { tools } : {}),
     });
 
     for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
+      const delta = chunk.choices[0]?.delta;
 
-      if (delta) {
-        yield { type: "text", content: delta };
+      // Text content
+      if (delta?.content) {
+        yield { type: "text", content: delta.content };
+      }
+
+      // Tool calls (OpenAI streams tool calls in chunks)
+      if (delta?.tool_calls) {
+        for (const toolCall of delta.tool_calls) {
+          yield {
+            type: "tool_call",
+            id: toolCall.id ?? "",
+            name: toolCall.function?.name ?? "",
+            arguments: toolCall.function?.arguments ?? "",
+          };
+        }
       }
 
       if (chunk.usage) {
