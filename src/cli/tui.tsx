@@ -71,7 +71,6 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   const [screen, setScreen] = useState<ScreenMode>("welcome");
   const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>(config.permission?.mode ?? "default");
-  const [version, setVersion] = useState("0.0.0");
   const slashCommands = useMemo(() => filterSlashCommands(input), [input]);
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
 
@@ -98,15 +97,23 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
   // Read package version once
   useEffect(() => {
-    void import("../../package.json", { with: { type: "json" } })
-      .then((pkg) => setVersion((pkg as { default: { version: string } }).default.version))
-      .catch(() => undefined);
+    // Version is read at module load by Header; nothing async to do here.
   }, []);
 
   // Initialize session and context on mount
   useEffect(() => {
-    const selection = selectUsableRoute(config, undefined, model, provider);
-    const route = selection.route;
+    let route = requestedRoute;
+    let warning: string | undefined;
+
+    try {
+      const selection = selectUsableRoute(config, undefined, model, provider);
+      route = selection.route;
+      warning = selection.warning;
+    } catch (err) {
+      // No provider available (no auth). Show banner, keep TUI alive.
+      warning = `⚠ No provider available: ${err instanceof Error ? err.message : String(err)}`;
+    }
+
     setActiveRoute(route);
 
     const session = new SessionWriter(cwd, route.model, route.provider);
@@ -134,7 +141,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     setAgentLines([
       `Session ${session.id}`,
       `Provider ${route.provider}/${route.model}`,
-      selection.warning,
+      warning,
       "Ready. Type a prompt or /help for commands."
     ].filter((line): line is string => Boolean(line)));
 
@@ -500,9 +507,23 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     setIsBusy(true);
     setInput("");
 
-    const selection = selectUsableRoute(config, undefined, model, provider);
+    let selection: ReturnType<typeof selectUsableRoute> | null = null;
+    try {
+      selection = selectUsableRoute(config, undefined, model, provider);
+      setActiveRoute(selection.route);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const errorLine = createLine("assistant", `Error: ${message}\nRun: neuro auth <provider> to configure credentials.`);
+      setMessages((prev) => [...prev, errorLine]);
+      setAgentLines([`✗ ${message}`]);
+      setIsBusy(false);
+      return;
+    }
+    if (!selection) {
+      setIsBusy(false);
+      return;
+    }
     const route = selection.route;
-    setActiveRoute(route);
 
     const userLine = createLine("user", value);
     setMessages((prev) => [...prev, userLine]);
@@ -682,7 +703,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       />
       {showWelcome ? (
         <WelcomeBanner
-          version={version}
+          version="0.2.0"
           cwd={cwd}
           providers={providerStatus}
           missingProviders={missingProviders}

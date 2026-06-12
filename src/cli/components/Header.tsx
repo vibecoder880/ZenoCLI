@@ -1,7 +1,10 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { createRequire } from "node:module";
 
-const VERSION = "0.2.0";
+const require = createRequire(import.meta.url);
+const pkg = require("../../../package.json") as { version: string };
+const VERSION: string = pkg.version;
 
 function formatCost(usd: number): string {
   if (usd >= 1) {

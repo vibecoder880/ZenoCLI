@@ -74,6 +74,64 @@ Run the TUI:
 npm run dev
 ```
 
+## Interactive TUI
+
+Run `neuro` (no subcommand) to open the interactive TUI. It features:
+
+- **Sticky header** with provider, model, session, mode, permission, and live cost
+- **Welcome banner** on first run (auto-dismisses on first prompt) with auth status per provider
+- **Footer keybinding hints** (`Esc`, `/`, `Shift+Tab`, `Shift+Enter`, `↑↓`)
+- **Multi-line input**: `Enter` submits, `Shift+Enter` (or `Ctrl+Enter`) inserts a newline
+- **Slash palette** grouped by category (Mode / Session / Debug / Info) with scroll highlight
+- **Color-coded messages**: user=cyan, assistant=green, system=dim, error=red
+
+Example layout (first-run, no auth yet):
+
+```
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ NeuroCLI · v0.2.0                                                            │
+│ openai/gpt-4.1-mini                                                          │
+│ session abc-12345 · chat · Default · $0.0000 · 0 tok · 0 hist                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗                                  │
+│ ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗                                 │
+│ ██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║                                 │
+│ ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║                                 │
+│ ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝                                 │
+│ ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝                                  │
+│                                                                              │
+│ v0.2.0 · /path/to/project                                                    │
+│                                                                              │
+│ Providers                                                                    │
+│ ✗ openai (no auth)                                                           │
+│ ✗ anthropic (no auth)                                                        │
+│ ✓ google                                                                     │
+│                                                                              │
+│ ⚠ Missing auth for: openai, anthropic                                        │
+│ Run: neuro auth openai                                                       │
+│                                                                              │
+│ Type a prompt to begin. Try /help for commands.                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Ready                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Conversation is empty. Type a prompt to begin.                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+> Ask NeuroCLI to help (chat mode)
+
+ Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
+```
+
+Type a prompt and press `Enter` to send it. Press `/` to browse slash commands (use `↑`/`↓` to navigate, `Tab` to fill, `Enter` to run). Press `Esc` to exit.
+
+See `docs/screenshots/tui-welcome.txt` for a captured TUI frame.
+
 Run a one-shot chat:
 
 ```bash
