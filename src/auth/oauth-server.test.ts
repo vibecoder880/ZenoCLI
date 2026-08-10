@@ -39,20 +39,24 @@ describe("waitForOAuthCode", () => {
   it("rejects login when the state parameter is missing", async () => {
     const port = await getFreePort();
     const promise = waitForOAuthCode("expected-state-123", port, 5_000);
+    // Attach the rejection handler before the request so the reject is always
+    // observed and Node does not report an unhandled rejection.
+    const rejection = expect(promise).rejects.toThrow(/state mismatch/);
 
     const status = await get(port, "/callback?code=CODE_ABC");
     expect(status).toBe(400);
 
-    await expect(promise).rejects.toThrow(/state mismatch/);
+    await rejection;
   });
 
   it("rejects login when the state parameter does not match", async () => {
     const port = await getFreePort();
     const promise = waitForOAuthCode("expected-state-123", port, 5_000);
+    const rejection = expect(promise).rejects.toThrow(/state mismatch/);
 
     const status = await get(port, "/callback?code=CODE_ABC&state=attacker-state");
     expect(status).toBe(400);
 
-    await expect(promise).rejects.toThrow(/state mismatch/);
+    await rejection;
   });
 });
