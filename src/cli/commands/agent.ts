@@ -1,4 +1,6 @@
 import { runAgentLoop } from "../../agent/loop.js";
+import { AuthProfileStore } from "../../auth/auth-profiles.js";
+import { refreshOAuthIfNeeded } from "../../auth/refresh.js";
 import { createProvider } from "../../providers/index.js";
 import { selectUsableRoute } from "../../providers/router-fallback.js";
 import { loadConfig } from "../../storage/config.js";
@@ -24,6 +26,10 @@ export async function runAgentCommand(options: RunAgentOptions): Promise<void> {
   const config = loadConfig();
   const selection = selectUsableRoute(config, undefined, options.model, options.provider);
   const route = selection.route;
+
+  // Refresh a near-expiry OAuth access token before the provider is created.
+  await refreshOAuthIfNeeded(new AuthProfileStore(), route.provider);
+
   const provider = createProvider(route.provider);
 
   if (selection.warning) {

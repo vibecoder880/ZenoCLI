@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.2 - 2026-08-11
+
+### Features
+- OAuth login now uses PKCE (S256) for the authorization-code flow: a local `code_verifier` is bound to the auth URL and sent only at token exchange, closing the interception attack on localhost callbacks
+- New `zeno auth health` command validates stored credentials (api-key present, OAuth not expired, refresh token present) and exits non-zero when any provider is unhealthy
+- OAuth access tokens auto-refresh when within 3 days of expiry at the `chat` / `agent` / TUI provider seam, using the stored refresh token with no full re-auth
+
+### Security
+- PKCE S256 challenge prevents misuse of an intercepted authorization code
+
+### Notes
+- Auto-refresh degrades gracefully: a failed refresh logs a warning and keeps using the stored token
+- No new dependencies; PKCE is implemented with `node:crypto`
+
 ## 0.7.1 - 2026-08-11
 
 ### Bugfix + Harden release

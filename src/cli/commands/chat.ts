@@ -1,5 +1,7 @@
 import { loadProjectInstructions } from "../../core/context.js";
 import { collectProviderText } from "../../core/stream.js";
+import { AuthProfileStore } from "../../auth/auth-profiles.js";
+import { refreshOAuthIfNeeded } from "../../auth/refresh.js";
 import { createProvider } from "../../providers/index.js";
 import { estimateCostUsd } from "../../providers/pricing.js";
 import { selectUsableRoute } from "../../providers/router-fallback.js";
@@ -18,6 +20,10 @@ export async function runChatCommand(options: RunChatOptions): Promise<void> {
   const config = loadConfig();
   const selection = selectUsableRoute(config, undefined, options.model, options.provider);
   const route = selection.route;
+
+  // Refresh a near-expiry OAuth access token before the provider is created.
+  await refreshOAuthIfNeeded(new AuthProfileStore(), route.provider);
+
   const aiProvider = createProvider(route.provider);
   if (selection.warning) {
     console.log(selection.warning);

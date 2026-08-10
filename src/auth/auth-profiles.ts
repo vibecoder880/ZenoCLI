@@ -261,6 +261,15 @@ export function isProfileExpired(profile: StoredAuthProfile, now = Date.now()): 
   return false;
 }
 
+/** True when an OAuth access token is expiring within `bufferMs` (default 3 days). */
+export function isOAuthNearExpiry(profile: StoredAuthProfile, bufferMs = 3 * 24 * 60 * 60 * 1000, now = Date.now()): boolean {
+  return (
+    profile.type === "oauth" &&
+    profile.expires > now &&
+    profile.expires - now <= bufferMs
+  );
+}
+
 export const KNOWN_PROVIDERS = ["openai", "anthropic", "google"] as const;
 export type KnownProvider = (typeof KNOWN_PROVIDERS)[number];
 

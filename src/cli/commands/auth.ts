@@ -6,6 +6,8 @@ import { waitForOAuthCode } from "../../auth/oauth-server.js";
 import {
   buildAuthorizationUrl,
   createOAuthState,
+  createPKCEChallenge,
+  createPKCEVerifier,
   exchangeAuthorizationCode,
   fetchOAuthEmail,
   getOAuthConfig,
@@ -33,7 +35,11 @@ function registerLoginCommand(command: Command): void {
       if (options.method === "oauth") {
         const config = getOAuthConfig(provider);
         const state = createOAuthState();
-        const authUrl = buildAuthorizationUrl(config, state);
+        // PKCE S256: the code_verifier is kept locally and sent only on the
+        // token exchange, so an intercepted authorization code cannot be
+        // redeemed by an attacker who lacks it.
+        const codeVerifier = createPKCEVerifier();
+        const authUrl = buildAuthorizationUrl(config, state, createPKCEChallenge(codeVerifier));
         console.log(`Starting OAuth login for ${provider}`);
         console.log(`Redirect URI: ${config.redirectUri}`);
         await openAuthorizationUrl(authUrl);
@@ -53,7 +59,7 @@ function registerLoginCommand(command: Command): void {
           }
         }
 
-        const token = await exchangeAuthorizationCode(config, code);
+        const token = await exchangeAuthorizationCode(config, code, codeVerifier);
         const email = await fetchOAuthEmail(config, token.access_token);
         const profile = store.saveProfile({
           type: "oauth",
@@ -217,6 +223,58 @@ function registerRefreshCommand(command: Command): void {
     });
 }
 
+/** Validate stored credentials and print a per-provider status. Sets exit 1 when any check fails. */
+export function runAuthHealth(providerFilter?: string): void {
+  const store = new AuthProfileStore();
+  const providers = providerFilter ? [providerFilter] : ["openai", "anthropic", "google"];
+  let healthy = true;
+
+  for (const provider of providers) {
+    const active = store.getActiveProfile(provider);
+    const allProfiles = store.listProfiles(provider);
+
+    if (!active) {
+      // No active profile at all — only mark unhealthy if nothing is stored.
+      if (allProfiles.length === 0) {
+        console.log(`✗ ${provider}: not configured`);
+        healthy = false;
+      } else {
+        console.log(`⚠ ${provider}: profiles present, no active profile (run zeno auth switch)`);
+        healthy = false;
+      }
+      continue;
+    }
+
+    if (isProfileExpired(active)) {
+      console.log(`✗ ${provider}: active profile "${active.id}" is expired`);
+      healthy = false;
+      continue;
+    }
+
+    if (active.type === "oauth" && !active.refresh) {
+      console.log(`✗ ${provider}: active profile "${active.id}" has no refresh token`);
+      healthy = false;
+      continue;
+    }
+
+    console.log(`✓ ${provider}: ${active.type} profile "${active.id}" valid`);
+  }
+
+  if (!healthy) {
+    process.exitCode = 1;
+  }
+}
+
+function registerHealthCommand(command: Command): void {
+  command
+    .command("health")
+    .description("Validate stored provider credentials")
+    .option("--provider <provider>", "Check a single provider")
+    .action((options: { provider?: string }) => {
+      runAuthHealth(options.provider);
+    });
+}
+
 export function registerAuthCommands(program: Command): void {
   const auth = program.command("auth").description("Authentication commands");
   registerLoginCommand(auth);
@@ -225,4 +283,5 @@ export function registerAuthCommands(program: Command): void {
   registerRemoveCommand(auth);
   registerStatusCommand(auth);
   registerRefreshCommand(auth);
+  registerHealthCommand(auth);
 }

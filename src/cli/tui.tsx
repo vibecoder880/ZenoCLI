@@ -9,6 +9,7 @@ import { Prompt } from "./components/Prompt.js";
 import { WelcomeBanner } from "./components/WelcomeBanner.js";
 import { useFirstRun } from "./hooks/useFirstRun.js";
 import { AuthProfileStore, listMissingProviders } from "../auth/auth-profiles.js";
+import { refreshOAuthIfNeeded } from "../auth/refresh.js";
 import { createProvider } from "../providers/index.js";
 import type { ChatMessage } from "../providers/base.js";
 import { estimateCostUsd } from "../providers/pricing.js";
@@ -529,6 +530,9 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     setMessages((prev) => [...prev, userLine]);
 
     try {
+      // Refresh a near-expiry OAuth access token before the provider is created.
+      await refreshOAuthIfNeeded(new AuthProfileStore(), route.provider);
+
       const aiProvider = createProvider(route.provider);
 
       if (mode === "agent") {
