@@ -9,8 +9,26 @@ import type { ToolDefinition, ToolExecutionContext, ToolResult } from "../tool-r
 
 // ---- Helpers ----
 
+/**
+ * Resolve a tool-supplied path against the working directory and confine the
+ * result to the workspace. Prevents path traversal: inputs such as "/etc",
+ * "C:\\...", or "../../.." resolve outside `cwd` and are rejected instead of
+ * reaching the filesystem. Symlinked entries inside the workspace are still
+ * followed; the containment check is lexical on the resolved path.
+ */
 function resolvePath(cwd: string, targetPath: string): string {
-  return path.isAbsolute(targetPath) ? targetPath : path.join(cwd, targetPath);
+  const resolved = path.isAbsolute(targetPath)
+    ? path.resolve(targetPath)
+    : path.resolve(cwd, targetPath);
+
+  const workspace = path.resolve(cwd);
+  const relative = path.relative(workspace, resolved);
+
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Path "${targetPath}" escapes the workspace and was blocked.`);
+  }
+
+  return resolved;
 }
 
 function isIgnored(targetPath: string, ignore: string[]): boolean {
