@@ -46,7 +46,7 @@ function registerLoginCommand(command: Command): void {
         } else {
           const port = Number(new URL(config.redirectUri).port || "9876");
           try {
-            code = await waitForOAuthCode(port);
+            code = await waitForOAuthCode(state, port);
           } catch {
             console.log("Local callback was not received. Paste the authorization code instead.");
             code = await promptForAuthorizationCode();
