@@ -164,9 +164,10 @@ function isSafeFetchUrl(url: string): { ok: boolean; reason?: string } {
     return { ok: true };
   }
   if (hostname.includes(":")) {
-    // Bare IPv6 literal in the host slot.
-    if (isBlockedIpv6(hostname)) {
-      return { ok: false, reason: `IP ${hostname} is a private/reserved address` };
+    // IPv6 literal in the host slot — strip the surrounding brackets.
+    const ipv6 = hostname.replace(/^\[|\]$/g, "");
+    if (isBlockedIpv6(ipv6)) {
+      return { ok: false, reason: `IP ${ipv6} is a private/reserved address` };
     }
     return { ok: true };
   }
