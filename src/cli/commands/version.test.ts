@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { runVersionCommand } from "./version.js";
+import packageJson from "../../../package.json" with { type: "json" };
 
 describe("version command", () => {
   it("prints the package version", () => {
@@ -7,7 +8,7 @@ describe("version command", () => {
 
     runVersionCommand();
 
-    expect(log).toHaveBeenCalledWith("zeno-cli 0.2.0");
+    expect(log).toHaveBeenCalledWith(`zeno-cli ${packageJson.version}`);
     log.mockRestore();
   });
 });
