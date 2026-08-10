@@ -5,7 +5,7 @@
  * Hỗ trợ dependencies (blocks/blockedBy), claim bằng file lock.
  */
 
-import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync, openSync, closeSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync, openSync, closeSync, unlinkSync } from "node:fs";
 import crypto from "node:crypto";
 import { getTaskListPath, getTeamDirectory } from "../storage/paths.js";
 
@@ -119,11 +119,8 @@ function withLock(filePath: string, fn: () => void): void {
         const staleByPid = token ? !isProcessAlive(token.pid) : false;
 
         if (staleByAge || staleByPid) {
-          // This delete-then-create is racy in theory, but the window only
-          // re-triggers EEXIST on the next attempt if another writer won —
-          // never a case where two processes both observe a lock as "theirs".
           try {
-            writeFileSync(lockPath, "", "utf8");
+            unlinkSync(lockPath);
           } catch {
             // The owner may have released between read and here; that is fine.
           }
@@ -144,9 +141,9 @@ function withLock(filePath: string, fn: () => void): void {
     fn();
   } finally {
     try {
-      writeFileSync(lockPath, "", "utf8"); // release
+      unlinkSync(lockPath); // release — remove so the next acquire sees no file
     } catch {
-      // ignore
+      // Another process may have already reclaimed it; ignore.
     }
   }
 }

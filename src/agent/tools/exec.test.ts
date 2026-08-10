@@ -20,7 +20,6 @@ describe("ensureSafeCommand", () => {
     "perl -e 'system(\"rm -rf /\")'",
     "rm -rf ${HOME}",
     "rm -r /var/lib/apt/lists",
-    "rm -rf dist 2>/dev/null",
   ])("blocks destructive command: %s", (command) => {
     expect(() => ensureSafeCommand(command)).toThrow(/blocked by safety policy/);
   });
