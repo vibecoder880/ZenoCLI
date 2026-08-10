@@ -10,7 +10,21 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), 
 const packageName = packageJson.name;
 const version =
   process.env.RELEASE_VERSION || process.env.GITHUB_REF_NAME || packageJson.version || "dev";
-const platform = process.platform === "win32" ? "windows-x64" : "linux-x64";
+
+/** Map the runner OS to a canonical release platform string. */
+function resolvePlatform(): string {
+  switch (process.platform) {
+    case "win32":
+      return "windows-x64";
+    case "darwin":
+      return "macos-x64";
+    case "linux":
+    default:
+      return "linux-x64";
+  }
+}
+
+const platform = resolvePlatform();
 const artifactBase = `${packageName}-${version}-${platform}`;
 const artifactDir = path.join(releaseRoot, artifactBase);
 

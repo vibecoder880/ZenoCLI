@@ -19,6 +19,66 @@ if (!match) {
   throw new Error(`Could not find changelog section for version ${version}.`);
 }
 
-const body = `# ZenoCLI ${version}\n\n${match[1].trim()}\n`;
+/**
+ * Classify a changelog bullet into Features / Fixes / Docs / Other.
+ * The current changelog has no explicit category labels, so we infer them
+ * from the leading tokens of each bullet.
+ */
+function classifyBullet(bullet: string): "Features" | "Fixes" | "Docs" | "Other" {
+  const lower = bullet.toLowerCase();
+
+  if (/\b(fix|fixed|fixes|bug|bugfix|correct|patch)/.test(lower)) {
+    return "Fixes";
+  }
+  if (/\b(docs?|documentation|readme|guide|guidebook)\b/.test(lower)) {
+    return "Docs";
+  }
+  if (/\b(feat|feature|adds?|new|support|implements|introduces|phase \d)/.test(lower)) {
+    return "Features";
+  }
+  return "Other";
+}
+
+// Extract the changelog body for this version, preserving any "Phase N" title.
+const rawBody = match[1].trim();
+const phaseMatch = rawBody.match(/^###\s+([^\n]+)/);
+const phaseTitle = phaseMatch ? phaseMatch[1].trim() : undefined;
+
+// Collect bullet lines (lines starting with "- " or "* ") and drop the title/heading.
+const bullets = rawBody
+  .split("\n")
+  .map((line) => line.trim())
+  .filter((line) => line.startsWith("- ") || line.startsWith("* "))
+  .map((line) => line.replace(/^[-*]\s+/, ""));
+
+const buckets: Record<"Features" | "Fixes" | "Docs" | "Other", string[]> = {
+  Features: [],
+  Fixes: [],
+  Docs: [],
+  Other: [],
+};
+
+for (const bullet of bullets) {
+  buckets[classifyBullet(bullet)].push(bullet);
+}
+
+let body = `# ZenoCLI ${version}\n\n`;
+
+if (phaseTitle) {
+  body += `### ${phaseTitle}\n\n`;
+}
+
+for (const category of ["Features", "Fixes", "Docs", "Other"] as const) {
+  const items = buckets[category];
+  if (items.length === 0) {
+    continue;
+  }
+  body += `## ${category}\n\n`;
+  for (const item of items) {
+    body += `- ${item}\n`;
+  }
+  body += "\n";
+}
+
 fs.writeFileSync(outputPath, body, "utf8");
 console.log(`Release notes written to ${outputPath}`);
