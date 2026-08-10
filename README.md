@@ -78,20 +78,22 @@ npm run dev
 
 Run `zeno` (no subcommand) to open the interactive TUI. It features:
 
-- **Sticky header** with provider, model, session, mode, permission, and live cost
-- **Welcome banner** on first run (auto-dismisses on first prompt) with auth status per provider
-- **Footer keybinding hints** (`Esc`, `/`, `Shift+Tab`, `Shift+Enter`, `↑↓`)
+- **Sticky header** (3 lines): logo + version, provider/model, then `session · mode · permission · cost · tokens · history`
+- **Welcome banner** on first run (auto-dismisses on first prompt) with ASCII logo, cwd, and auth status per provider
+- **Footer keybinding hints** (`Esc`, `/`, `Shift+Tab`, `Shift+Enter`, `↑↓`) with a busy indicator
+- **Chat and agent modes**: chat streams a response; agent runs the local tool-using loop with live tool events, compacted context, and an interrupt (`Esc`)
 - **Multi-line input**: `Enter` submits, `Shift+Enter` (or `Ctrl+Enter`) inserts a newline
-- **Slash palette** grouped by category (Mode / Session / Debug / Info) with scroll highlight
+- **Slash palette** grouped by category (Mode / Session / Debug / Info) with scroll highlight; filter is the substring after `/`, case-insensitive
 - **Color-coded messages**: user=cyan, assistant=green, system=dim, error=red
 
 Example layout (first-run, no auth yet):
 
 ```
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.2.0                                                            │
+│ ZenoCLI · v0.7.1                                                            │
 │ openai/gpt-4.1-mini                                                          │
-│ session abc-12345 · chat · Default · $0.0000 · 0 tok · 0 hist                │
+│ session <id> · chat · 🔒 Default (prompt for writes) · $0.0000 · 0 tok · 0   │
+│ hist                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
@@ -102,14 +104,14 @@ Example layout (first-run, no auth yet):
 │ ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝                                 │
 │ ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝                                  │
 │                                                                              │
-│ v0.2.0 · /path/to/project                                                    │
+│ v0.7.1 · /path/to/project                                                    │
 │                                                                              │
 │ Providers                                                                    │
 │ ✗ openai (no auth)                                                           │
 │ ✗ anthropic (no auth)                                                        │
-│ ✓ google                                                                     │
+│ ✗ google (no auth)                                                           │
 │                                                                              │
-│ ⚠ Missing auth for: openai, anthropic                                        │
+│ ⚠ Missing auth for: openai, anthropic, google                                │
 │ Run: zeno auth openai                                                       │
 │                                                                              │
 │ Type a prompt to begin. Try /help for commands.                              │
@@ -138,11 +140,24 @@ Run a one-shot chat:
 node dist/index.js chat "Explain this repository"
 ```
 
-Run the agent loop:
+Run the agent loop (defaults to `--max-turns 8`):
 
 ```bash
 node dist/index.js agent "Inspect the project and summarize the highest-risk gaps"
+node dist/index.js agent "Run the test suite and fix failures" --max-turns 12
 ```
+
+Headless / CI mode — plain machine-readable output, no TTY decorations, prints the
+final result to stdout and surfaces errors to stderr; a cancelled run exits `130`:
+
+```bash
+node dist/index.js agent "Fix the failing tests in src/core" --non-interactive
+node dist/index.js agent "Apply the refactor" --pipe --max-turns 20 --retries 3
+```
+
+`--pipe` is an alias for `--non-interactive`. `--retries <n>` retries retryable
+provider errors (rate limits / 5xx) with exponential backoff. Interactive mode is
+unchanged. Runs can be cancelled with `Ctrl+C` (SIGINT) which aborts the loop cleanly.
 
 Show recent history and tracked token usage:
 
@@ -209,7 +224,7 @@ ZenoCLI stores local chat history in `~/.zenocli/history.json`.
 - `history show <id>` prints a full stored exchange
 - `history clear` removes stored exchanges
 - `cost` shows total tracked tokens
-- TUI also supports `/help`, `/init`, `/chat`, `/agent`, `/model`, `/auth`, `/history`, `/cost`, `/health`, `/models`, `/config`, `/context`, `/clear`, `/compact`, and `/exit`
+- TUI slash commands are grouped by category: Mode (`/chat`, `/agent`, `/permission`, `/exit`), Session (`/clear`, `/memory`, `/resume`, `/fork`, `/undo`), Debug (`/cost`, `/health`, `/models`, `/context`, `/compact`), and Info (`/help`, `/init`, `/model`, `/auth`, `/history`, `/config`, `/version`)
 
 ## Verification
 
@@ -222,7 +237,7 @@ npm run build
 
 Detailed verification matrix:
 
-- See [docs/verification-checklist.md](D:/VibeCoder/ZenoCLI/docs/verification-checklist.md)
+- See [docs/verification-checklist.md](./docs/verification-checklist.md)
 
 ## Releases
 
@@ -230,8 +245,9 @@ The workflow at `.github/workflows/release.yml` builds and verifies the project 
 
 - Windows
 - Linux
+- macOS
 
-When you push a tag like `v0.2.0`, GitHub Actions will:
+When you push a tag like `v0.7.1`, GitHub Actions will:
 
 1. install dependencies
 2. run tests, lint, and build
@@ -248,4 +264,4 @@ npm run release:verify
 
 Continuous verification for pushes and pull requests runs in:
 
-- [D:/VibeCoder/ZenoCLI/.github/workflows/ci.yml](D:/VibeCoder/ZenoCLI/.github/workflows/ci.yml)
+- [.github/workflows/ci.yml](./.github/workflows/ci.yml)

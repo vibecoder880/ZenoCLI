@@ -1,7 +1,9 @@
 # ZenoCLI — Architecture
 
-**Version**: 0.6.0 (Phase 4 complete)
+**Version**: 0.7.0 (Phase 5 — TUI parity complete)
 **Status**: Production-ready alpha
+
+> The module map below reflects the current code (Phase 5, `CHANGELOG.md` 0.7.0) and supersedes any stale version claims elsewhere in this file or in older docs.
 
 ## Overview
 
@@ -30,11 +32,14 @@ Agent Loop (orchestrator)
 └─────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────┐
-│  Tool Registry                         │
-│  - Built-in tools (read, write, glob)   │
-│  - MCP tools (mcp__server__tool)        │
-│  - Skill tools                          │
-│  - LSP tools (Phase 4)                  │
+│  Tool Registry (dynamic)               │
+│  - Built-ins: read_file, write_file,     │
+│    edit_file, list_dir, glob, grep,      │
+│    web_search, web_fetch, ask_user,      │
+│    run_command                           │
+│  - Orchestration stubs: spawn_subagent,  │
+│    lsp_diagnostics                       │
+│  - MCP tools (mcp__server__tool)         │
 └─────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────┐
@@ -48,25 +53,25 @@ Agent Loop (orchestrator)
 ## Module Map
 
 ### Core (`src/core/`)
-- **context-manager.ts** — Token-aware context window, auto-compaction
-- **session.ts** — JSONL session persistence
-- **memory.ts** — Cross-session memory (MEMORY.md)
-- **zeno-md.ts** — Hierarchical ZENO.md loader
+- **context-manager.ts** — Token-aware context window, auto-compaction at 80%, eviction (tool outputs kept, then old turns)
+- **session.ts** — JSONL session persistence under `~/.zenocli/projects/{hash}/sessions/`
+- **memory.ts** — Cross-session memory (`MEMORY.md` global + per-project)
+- **zeno-md.ts** — Hierarchical ZENO.md loader (global `~/.zenocli/ZENO.md`, root→cwd, `.zeno/rules/*.md`)
 - **smart-context.ts** — File indexing, suggestion engine
-- **prompt-cache.ts** — System prompt caching
+- **prompt-cache.ts** — System prompt caching (5-min TTL, mtime invalidation)
 - **context-budget.ts** — Per-turn budget management
-- **update-checker.ts** — Version check
+- **update-checker.ts** — Version check against npm registry
 - **stream.ts** — Provider text collector
 
 ### Agent (`src/agent/`)
-- **loop.ts** — Intelligent agentic loop
-- **subagent.ts** — Isolated subagent spawning
-- **team.ts** — Team manager
-- **task-list.ts** — File-based task coordination
-- **messaging.ts** — Mailbox system
-- **plan-mode.ts** — Plan approval workflow
-- **agent-definitions.ts** — Custom agent types
-- **tool-registry.ts** — Dynamic tool registry
+- **loop.ts** — Intelligent agentic loop (per-turn corrections, auto-compaction, permission→hooks→checkpoint→`executeTool()`)
+- **subagent.ts** — Isolated subagent spawning (typed presets: researcher, coder, tester, reviewer)
+- **team.ts** — Team manager (`~/.zenocli/teams/{name}/config.json`)
+- **task-list.ts** — File-based task coordination (`tasks.jsonl`)
+- **messaging.ts** — Mailbox system (`messages/{teammate}.jsonl`)
+- **plan-mode.ts** — Plan approval workflow (`.zeno/plans/{id}.md`, frontmatter + Steps)
+- **agent-definitions.ts** — Custom agent types (markdown frontmatter: name/description/tools/model)
+- **tool-registry.ts** — Dynamic tool registry (`ToolDefinition` with safety level, category, JsonSchema params)
 - **tools/** — Built-in tools (fs, search, exec, orchestration)
 
 ### Safety (`src/safety/`)
@@ -91,10 +96,13 @@ Agent Loop (orchestrator)
 - **coordinator.md** — Team coordination
 
 ### Storage (`src/storage/`)
-- **config.ts** — TOML config with permission/MCP/hooks
-- **history.ts** — Chat history
-- **paths.ts** — Path constants
-- **auth-profiles.ts** — API key + OAuth profiles
+- **config.ts** — TOML config (`~/.zenocli/config.toml`) with permission/MCP/hooks sections
+- **history.ts** — Chat history (`~/.zenocli/history.json`, cap 200)
+- **paths.ts** — Path constants — app root `~/.zenocli`; sessions/memory under `~/.zenocli/projects/{hash}/…` (sha256[:16] of cwd); skills (global `~/.zenocli/skills`, project `.zeno/skills`, builtin); rules `.zeno/rules`; teams/tasks/mailbox; plans `.zeno/plans`
+
+### Auth (`src/auth/`)
+- **auth-profiles.ts** — API key + OAuth profiles (`~/.zenocli/auth-profiles.json`); profiles typed api_key|oauth|token, active-profile selection, expiry detection
+- **oauth.ts** + **oauth-server.ts** — OAuth login flow (browser + local callback server on 127.0.0.1:9876, or `--manual-code`), refresh-token grant via `zeno auth refresh`
 
 ### CLI (`src/cli/`)
 - **tui.tsx** — Ink/React TUI với welcome banner, sticky header/footer, multi-line input
@@ -104,45 +112,49 @@ Agent Loop (orchestrator)
 - **hooks/** — useMultiLineInput, useFirstRun
 
 ### Providers (`src/providers/`)
-- **base.ts** — AiProvider interface
-- **openai.ts** — OpenAI adapter
-- **anthropic.ts** — Anthropic adapter
-- **google.ts** — Google adapter
-- **router.ts** — Model route resolution
+- **base.ts** — `AiProvider` contract (`chat()` streaming, `listModels()`, `healthCheck()`). `ChatRequest` accepts an optional `signal?: AbortSignal` so an in-flight streaming request can be cancelled.
+- **openai.ts** / **anthropic.ts** / **google.ts** — Provider adapters. Each passes `request.signal` into its SDK call (OpenAI `create(…, { signal })`, Anthropic `stream(…, { signal })`, Google `fetch(…, { signal })`)
+- **router.ts** — Model route resolution (explicit `provider/model`, alias, or prefix inference)
+- **router-fallback.ts** — Usable-route fallback (`[aliases.smart, aliases.fast, aliases.cheap, default.model]`)
+- **pricing.ts** — Static pricing table + `estimateCostUsd()`
 - **catalog.ts** — Provider catalog
 
 ## Data Flow
 
 ### Chat Flow
 1. User submits prompt via TUI or CLI
-2. Config loaded, model route resolved
-3. Project instructions + memory loaded
-4. Context manager prepares messages
-5. Provider called (with native tool definitions)
-6. Response collected (streaming)
-7. If tool calls: execute, add to context, loop
-8. If final: append to history, display
+2. Config loaded, usable route resolved (`selectUsableRoute` fallback)
+3. Project instructions (`ZENO.md`) + memory loaded
+4. Provider called; response collected via `collectProviderText` (streaming)
+5. Response appended to TUI message list + persisted to `history.json`
+6. Chat mode does not execute tool calls — that is the agent mode's job
 
 ### Agent Flow
-1. Task submitted, context initialized
+1. Task submitted, context initialized (fresh `ContextManager` maxTokens window)
 2. For each turn:
-   a. Check for mid-turn user corrections
-   b. Auto-compact if needed
-   c. Send to provider with tool definitions
-   d. Handle tool calls (with permission + checkpoint + hooks)
-   e. Add results to context
-3. Return final summary
+   a. Respect the abort signal (skip remaining work if cancelled)
+   b. Check for mid-turn user corrections
+   c. Auto-compact if needed
+   d. Send to provider with tool definitions — via `collectProviderText(…, signal)`, retiring retryable provider errors with bounded exponential backoff (`maxRetries` / `--retries`)
+   e. Handle tool calls (with permission → hooks → checkpoint → `executeTool()` with the abort signal forwarded in the tool context; `registerAllTools()` runs once at startup)
+   f. Add results to context
+3. Return final summary (result includes turns, totalTokens, toolsUsed, and `aborted: true` when cancelled)
+
+`zeno agent` supports headless runs (`--non-interactive` / `--pipe`): plain machine-readable
+stdout, errors to stderr, no TTY decorations, and exit code `130` when the loop aborts so a
+cancelled CI/CD job fails cleanly. Interactive behavior is unchanged.
 
 ### Subagent Flow
-1. Parent calls `spawnSubagent(task, type)`
-2. New isolated ContextManager created
-3. Subagent runs with restricted tools
-4. Returns summary (not full conversation)
-5. Parent context stays clean
+1. Parent calls `spawnSubagent(options)` or `spawnTypedSubagent(type, options)`
+2. New isolated ContextManager (50k window) created; default read-only tools
+3. Typed presets: researcher (read-only), coder (+write/edit), tester (+run_command), reviewer (+run_command)
+4. Subagent runs with restricted tools and returns `SubagentResult` (summary, tokens used, tools used)
+5. Parent context stays clean (note: `filesChanged` in SubagentResult is not populated — always `[]` currently)
+6. The `spawn_subagent` and `lsp_diagnostics` tools are orchestration stubs that error in tool context; real spawning uses the `src/agent/subagent.ts` functions
 
 ## Configuration
 
-`~/.Zenocli/config.toml`:
+`~/.zenocli/config.toml`:
 ```toml
 [default]
 model = "openai/gpt-4.1-mini"
@@ -173,20 +185,18 @@ command = "npx eslint --fix ${file}"
 
 ## Security Model
 
-- **6 Permission Modes**: default, acceptEdits, plan, auto, dontAsk, bypassPermissions
-- **Protected Paths**: .git, .bashrc, .mcp.json, etc.
-- **Safety Classifier**: Blocks destructive commands, data exfiltration
-- **Checkpoints**: Every file edit snapshot-able, undo-able
-- **Hooks**: Custom validation before/after tool calls
+- **6 Permission Modes**: default, acceptEdits, plan, auto, dontAsk, bypassPermissions (cycled with `Shift+Tab` or `/permission`)
+- **Protected Paths**: .git, .bashrc, .mcp.json, etc. (`isProtectedPath()` check on writes)
+- **Safety Classifier**: Rule-based (regex + allow/block lists) — allows read-only tools and safe commands (install, git read, test/lint), blocks destructive shell commands and data exfiltration
+- **Checkpoints**: Every file edit snapshot-able, undo-able (in-memory, max 100, `Esc+Esc` or `/undo`)
+- **Hooks**: Custom validation before/after tool calls (`PreToolUse`/`PostToolUse`/`SessionStart`/`SessionEnd`/`Notification`) with template vars `${file} ${tool} ${cwd} ${result}`; `PreToolUse` can block
 
 ## Testing
 
-- **221 tests** across 36 test files
-- **100% pass rate**
-- Vitest framework
-- TypeScript strict mode
-- ESLint clean
-- Build clean
+- **40 test files** currently (`find src -name '*.test.ts' -o -name '*.test.tsx'`)
+- Vitest framework (`vitest run`), TypeScript strict mode (`"strict": true`)
+- CI runs `npm run test`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm pack --dry-run` on Ubuntu and Windows
+- Release gates include `npm run release:verify` (tests + typecheck + lint + build + pack) and `npm pack --dry-run`
 
 ## Roadmap
 
@@ -194,4 +204,4 @@ command = "npx eslint --fix ${file}"
 - ✅ Phase 2: Plugin & Safety System
 - ✅ Phase 3: Multi-Agent System
 - ✅ Phase 4: Polish & Integration
-- 🔜 Phase 5: Community features (plugin marketplace, etc.)
+- ✅ Phase 5: TUI Parity với Claude Code (current) — see `CHANGELOG.md` 0.7.0
