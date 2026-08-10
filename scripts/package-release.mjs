@@ -12,7 +12,7 @@ const version =
   process.env.RELEASE_VERSION || process.env.GITHUB_REF_NAME || packageJson.version || "dev";
 
 /** Map the runner OS to a canonical release platform string. */
-function resolvePlatform(): string {
+function resolvePlatform() {
   switch (process.platform) {
     case "win32":
       return "windows-x64";

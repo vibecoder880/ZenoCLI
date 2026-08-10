@@ -24,7 +24,7 @@ if (!match) {
  * The current changelog has no explicit category labels, so we infer them
  * from the leading tokens of each bullet.
  */
-function classifyBullet(bullet: string): "Features" | "Fixes" | "Docs" | "Other" {
+function classifyBullet(bullet) {
   const lower = bullet.toLowerCase();
 
   if (/\b(fix|fixed|fixes|bug|bugfix|correct|patch)/.test(lower)) {
@@ -51,7 +51,7 @@ const bullets = rawBody
   .filter((line) => line.startsWith("- ") || line.startsWith("* "))
   .map((line) => line.replace(/^[-*]\s+/, ""));
 
-const buckets: Record<"Features" | "Fixes" | "Docs" | "Other", string[]> = {
+const buckets = {
   Features: [],
   Fixes: [],
   Docs: [],
@@ -68,7 +68,7 @@ if (phaseTitle) {
   body += `### ${phaseTitle}\n\n`;
 }
 
-for (const category of ["Features", "Fixes", "Docs", "Other"] as const) {
+for (const category of ["Features", "Fixes", "Docs", "Other"]) {
   const items = buckets[category];
   if (items.length === 0) {
     continue;
