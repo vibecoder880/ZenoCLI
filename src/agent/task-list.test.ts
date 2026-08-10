@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { TaskList, ensureTeamDirectory } from "./task-list.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-tasks-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-tasks-${Date.now()}`);
 
 beforeEach(() => {
   process.env.HOME = testDir;

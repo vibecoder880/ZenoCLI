@@ -34,7 +34,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/fork", description: "Fork current session", category: "session" },
   { command: "/permission", description: "Cycle permission mode", category: "mode" },
   { command: "/undo", description: "Undo last file edit (checkpoint)", category: "session" },
-  { command: "/exit", description: "Quit NeuroCLI", category: "mode" }
+  { command: "/exit", description: "Quit ZenoCLI", category: "mode" }
 ];
 
 export function filterSlashCommands(input: string): SlashCommand[] {

@@ -180,7 +180,7 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
   } finally {
     const elapsed = Date.now() - startTime;
     // Log for debugging
-    if (process.env.NEUROCLI_DEBUG) {
+    if (process.env.ZENOCLI_DEBUG) {
       console.error(`Subagent completed in ${elapsed}ms`);
     }
   }
@@ -263,7 +263,7 @@ function buildSubagentPrompt(
   memoryContent?: string,
 ): string {
   const parts: string[] = [
-    "You are a subagent in the NeuroCLI system.",
+    "You are a subagent in the ZenoCLI system.",
     "You have a specific, isolated task. Complete it efficiently and return a concise summary.",
     "",
     "## Available Tools",

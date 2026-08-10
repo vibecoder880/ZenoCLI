@@ -4,7 +4,7 @@ import path from "node:path";
 import { mkdirSync } from "node:fs";
 
 export function getAppDataDirectory(): string {
-  return path.join(os.homedir(), ".neurocli");
+  return path.join(os.homedir(), ".zenocli");
 }
 
 export function ensureAppDataDirectory(): string {
@@ -14,7 +14,7 @@ export function ensureAppDataDirectory(): string {
 }
 
 export function getProjectInstructionsPath(cwd = process.cwd()): string {
-  return path.join(cwd, "NEURO.md");
+  return path.join(cwd, "ZENO.md");
 }
 
 export function getHistoryPathname(): string {
@@ -61,21 +61,21 @@ export function getGlobalMemoryPath(): string {
 // --- Rules paths ---
 
 export function getProjectRulesDirectory(cwd = process.cwd()): string {
-  return path.join(cwd, ".neuro", "rules");
+  return path.join(cwd, ".zeno", "rules");
 }
 
 // --- Phase 2 paths ---
 
-/** Global skills directory: ~/.neurocli/skills/ */
+/** Global skills directory: ~/.zenocli/skills/ */
 export function getGlobalSkillsDirectory(): string {
   const dir = path.join(getAppDataDirectory(), "skills");
   mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-/** Project skills directory: .neuro/skills/ */
+/** Project skills directory: .zeno/skills/ */
 export function getProjectSkillsDirectory(cwd = process.cwd()): string {
-  return path.join(cwd, ".neuro", "skills");
+  return path.join(cwd, ".zeno", "skills");
 }
 
 /** Built-in skills directory: bundled with the CLI */
@@ -85,28 +85,28 @@ export function getBuiltinSkillsDirectory(): string {
 
 // --- Phase 3 paths ---
 
-/** Directory for a team: ~/.neurocli/teams/{name}/ */
+/** Directory for a team: ~/.zenocli/teams/{name}/ */
 export function getTeamDirectory(teamName: string): string {
   const dir = path.join(getAppDataDirectory(), "teams", teamName);
   mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-/** Task list file for a team: ~/.neurocli/teams/{name}/tasks.jsonl */
+/** Task list file for a team: ~/.zenocli/teams/{name}/tasks.jsonl */
 export function getTaskListPath(teamName: string): string {
   return path.join(getTeamDirectory(teamName), "tasks.jsonl");
 }
 
-/** Mailbox file for a teammate: ~/.neurocli/teams/{name}/messages/{teammate}.jsonl */
+/** Mailbox file for a teammate: ~/.zenocli/teams/{name}/messages/{teammate}.jsonl */
 export function getMailboxPath(teamName: string, teammate: string): string {
   const dir = path.join(getTeamDirectory(teamName), "messages");
   mkdirSync(dir, { recursive: true });
   return path.join(dir, `${teammate}.jsonl`);
 }
 
-/** Project plans directory: .neuro/plans/ */
+/** Project plans directory: .zeno/plans/ */
 export function getProjectPlansDirectory(cwd = process.cwd()): string {
-  const dir = path.join(cwd, ".neuro", "plans");
+  const dir = path.join(cwd, ".zeno", "plans");
   mkdirSync(dir, { recursive: true });
   return dir;
 }

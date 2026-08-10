@@ -153,12 +153,12 @@ export class SkillLoader {
   loadStandardSkills(cwd: string): number {
     let total = 0;
 
-    // Global skills: ~/.neurocli/skills/
+    // Global skills: ~/.zenocli/skills/
     const globalDir = path.join(ensureAppDataDirectory(), "skills");
     total += this.loadFromDirectory(globalDir);
 
-    // Project skills: .neuro/skills/
-    const projectDir = path.join(cwd, ".neuro", "skills");
+    // Project skills: .zeno/skills/
+    const projectDir = path.join(cwd, ".zeno", "skills");
     total += this.loadFromDirectory(projectDir);
 
     return total;

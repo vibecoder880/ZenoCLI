@@ -1,7 +1,7 @@
 /**
  * Team Manager — quản lý team lifecycle và coordination.
  *
- * Team: ~/.neurocli/teams/{name}/
+ * Team: ~/.zenocli/teams/{name}/
  *   ├── config.json      # Team config
  *   ├── tasks.jsonl      # Task list
  *   └── messages/        # Mailboxes
@@ -147,5 +147,5 @@ export function listTeams(): TeamConfig[] {
 }
 
 function getAppDataDirectory(): string {
-  return path.join(os.homedir(), ".neurocli");
+  return path.join(os.homedir(), ".zenocli");
 }

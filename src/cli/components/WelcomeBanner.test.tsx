@@ -33,7 +33,7 @@ describe("<WelcomeBanner />", () => {
       />,
     );
     expect(lastFrame()).toContain("Missing auth");
-    expect(lastFrame()).toContain("neuro auth");
+    expect(lastFrame()).toContain("zeno auth");
   });
 
   it("does not show auth warning when all providers are ok", () => {

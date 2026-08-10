@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { Mailbox, createPlanApprovalRequest, createPlanApprovalResponse, createShutdownRequest } from "./messaging.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-mailbox-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-mailbox-${Date.now()}`);
 
 beforeEach(() => {
   process.env.HOME = testDir;

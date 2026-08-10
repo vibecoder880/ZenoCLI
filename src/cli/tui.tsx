@@ -20,7 +20,7 @@ import { getConfigPathname, loadConfig } from "../storage/config.js";
 import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../storage/history.js";
 import { listProviderCatalog, tryCreateProvider } from "../providers/index.js";
 import { ContextManager } from "../core/context-manager.js";
-import { getMergedInstructions, getInstructionsSummary } from "../core/neuro-md.js";
+import { getMergedInstructions, getInstructionsSummary } from "../core/zeno-md.js";
 import { getMemorySummary, loadMemory, readFullMemory } from "../core/memory.js";
 import { SessionWriter, listSessions, forkSession } from "../core/session.js";
 import { runAgentLoop, type AgentEvent } from "../agent/loop.js";
@@ -195,7 +195,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     if (command.command === "/init") {
       setAgentLines([
         "Workspace bootstrap runs from the terminal command.",
-        "Run: neuro init"
+        "Run: zeno init"
       ]);
       setInput("");
       return true;
@@ -326,7 +326,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     }
 
     if (command.command === "/version") {
-      setAgentLines(["Run `neuro version` in the terminal to print the installed package version."]);
+      setAgentLines(["Run `zeno version` in the terminal to print the installed package version."]);
       setInput("");
       return true;
     }
@@ -341,7 +341,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         setAgentLines(
           instructions
             ? [`Instructions loaded (${instructions.length} bytes)`, instructions.slice(0, 300)]
-            : [`No NEURO.md found`]
+            : [`No ZENO.md found`]
         );
       }
       setInput("");
@@ -393,7 +393,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         setAgentLines([
           "Recent sessions:",
           ...recent.map((s) => `  ${s.id} (${s.model}, ${s.entryCount} entries, ${new Date(s.updatedAt).toLocaleString()})`),
-          "Use: neuro --resume <id> to resume a session."
+          "Use: zeno --resume <id> to resume a session."
         ]);
       }
       setInput("");
@@ -513,7 +513,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       setActiveRoute(selection.route);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const errorLine = createLine("assistant", `Error: ${message}\nRun: neuro auth <provider> to configure credentials.`);
+      const errorLine = createLine("assistant", `Error: ${message}\nRun: zeno auth <provider> to configure credentials.`);
       setMessages((prev) => [...prev, errorLine]);
       setAgentLines([`✗ ${message}`]);
       setIsBusy(false);
@@ -716,7 +716,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       ) : null}
       <Prompt
         value={input}
-        placeholder={isBusy ? "Working... (Esc to interrupt)" : `Ask NeuroCLI to help (${mode} mode)`}
+        placeholder={isBusy ? "Working... (Esc to interrupt)" : `Ask ZenoCLI to help (${mode} mode)`}
         disabled={isBusy}
         onChange={setInput}
         onSubmit={(value) => {

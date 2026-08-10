@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "./history.js";
 
-const tempHome = "D:/VibeCoder/NeuroCli/.tmp-history-home";
+const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-history-home";
 
 describe("history storage", () => {
   beforeEach(() => {

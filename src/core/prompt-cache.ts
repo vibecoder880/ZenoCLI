@@ -1,5 +1,5 @@
 /**
- * Prompt Cache — cache system prompts và NEURO.md giữa các turns.
+ * Prompt Cache — cache system prompts và ZENO.md giữa các turns.
  *
  * Lưu trong memory với TTL. Cache invalidation dựa trên file mtime.
  */

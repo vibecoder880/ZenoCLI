@@ -52,7 +52,7 @@ export function WelcomeBanner({
       {hasMissing ? (
         <Box marginTop={1} flexDirection="column">
           <Text color="yellow">⚠ Missing auth for: {missingProviders.join(", ")}</Text>
-          <Text dimColor>Run: neuro auth {missingProviders[0]}</Text>
+          <Text dimColor>Run: zeno auth {missingProviders[0]}</Text>
         </Box>
       ) : null}
 

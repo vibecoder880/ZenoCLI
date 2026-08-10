@@ -40,4 +40,4 @@ Ship a final release only after:
 1. all automated checks pass
 2. the manual credential-gated checks above are completed
 3. the release workflow succeeds for the target tag
-4. npm publish succeeds for `neuro-cli`
+4. npm publish succeeds for `zeno-cli`

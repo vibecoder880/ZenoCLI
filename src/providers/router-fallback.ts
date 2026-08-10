@@ -1,7 +1,7 @@
 import { AuthProfileStore } from "../auth/auth-profiles.js";
 import { tryCreateProvider } from "./index.js";
 import { resolveModelRoute, type ProviderRoute } from "./router.js";
-import type { NeuroConfig } from "../storage/config.js";
+import type { ZenoConfig } from "../storage/config.js";
 
 export interface RoutedProviderSelection {
   route: ProviderRoute;
@@ -9,7 +9,7 @@ export interface RoutedProviderSelection {
   warning?: string;
 }
 
-function getFallbackModels(config: NeuroConfig): string[] {
+function getFallbackModels(config: ZenoConfig): string[] {
   return [
     config.aliases.smart,
     config.aliases.fast,
@@ -19,7 +19,7 @@ function getFallbackModels(config: NeuroConfig): string[] {
 }
 
 export function selectUsableRoute(
-  config: NeuroConfig,
+  config: ZenoConfig,
   store = new AuthProfileStore(),
   model?: string,
   provider?: string

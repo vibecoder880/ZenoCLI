@@ -37,18 +37,18 @@ if (install.status !== 0) {
 const binDir = path.join(stagingRoot, "bin");
 await fsp.mkdir(binDir, { recursive: true });
 await fsp.writeFile(
-  path.join(binDir, "neuro"),
+  path.join(binDir, "zeno"),
   "#!/usr/bin/env sh\nDIR=\"$(CDPATH= cd -- \"$(dirname -- \"$0\")/..\" && pwd)\"\nnode \"$DIR/dist/index.js\" \"$@\"\n",
   "utf8"
 );
 await fsp.writeFile(
-  path.join(binDir, "neuro.cmd"),
+  path.join(binDir, "zeno.cmd"),
   "@echo off\r\nset DIR=%~dp0..\r\nnode \"%DIR%\\dist\\index.js\" %*\r\n",
   "utf8"
 );
 
 if (process.platform !== "win32") {
-  await fsp.chmod(path.join(binDir, "neuro"), 0o755);
+  await fsp.chmod(path.join(binDir, "zeno"), 0o755);
 }
 
 await fsp.cp(stagingRoot, artifactDir, { recursive: true });

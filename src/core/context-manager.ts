@@ -3,7 +3,7 @@
  *
  * Priority for eviction (lowest first):
  *   tool outputs (oldest) → old user messages → old assistant messages
- * Always preserved: system prompt, NEURO.md, memory, current task context
+ * Always preserved: system prompt, ZENO.md, memory, current task context
  */
 
 import type { ChatMessage } from "../providers/base.js";

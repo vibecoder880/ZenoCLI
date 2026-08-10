@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { runContextInitCommand, runContextSetCommand, runContextShowCommand } from "./context.js";
 
-const tempDir = "D:/VibeCoder/NeuroCli/.tmp-context-workspace";
+const tempDir = "D:/VibeCoder/ZenoCLI/.tmp-context-workspace";
 
 describe("context commands", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -18,7 +18,7 @@ describe("context commands", () => {
 
   it("creates and shows a context file", () => {
     runContextInitCommand(tempDir);
-    runContextSetCommand(tempDir, "# NEURO.md\nUse tests first.");
+    runContextSetCommand(tempDir, "# ZENO.md\nUse tests first.");
     runContextShowCommand(tempDir);
 
     expect(log.mock.calls.flat().join("\n")).toContain("Use tests first.");

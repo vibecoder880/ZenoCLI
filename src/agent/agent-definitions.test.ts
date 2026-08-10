@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { AgentDefinitionLoader } from "./agent-definitions.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-agents-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-agents-${Date.now()}`);
 
 beforeEach(() => {
   mkdirSync(testDir, { recursive: true });

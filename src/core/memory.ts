@@ -2,7 +2,7 @@
  * Cross-session memory system.
  *
  * Reads and writes MEMORY.md files that persist across sessions.
- * Two scopes: global (~/.neurocli/MEMORY.md) and project-scoped.
+ * Two scopes: global (~/.zenocli/MEMORY.md) and project-scoped.
  * Loads first 200 lines / 25KB at session start.
  */
 

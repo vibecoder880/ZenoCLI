@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { runDoctorCommand } from "./doctor.js";
 
-const tempHome = "D:/VibeCoder/NeuroCli/.tmp-doctor-home";
-const tempWorkspace = "D:/VibeCoder/NeuroCli/.tmp-doctor-workspace";
+const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-doctor-home";
+const tempWorkspace = "D:/VibeCoder/ZenoCLI/.tmp-doctor-workspace";
 
 describe("doctor command", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

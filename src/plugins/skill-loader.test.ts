@@ -5,7 +5,7 @@ import os from "node:os";
 import { SkillLoader } from "./skill-loader.js";
 import * as skillModule from "./skill-loader.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-skills-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-skills-${Date.now()}`);
 
 beforeEach(() => {
   mkdirSync(testDir, { recursive: true });

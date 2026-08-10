@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { detectFirstRun } from "./useFirstRun.js";
-import type { NeuroConfig } from "../../storage/config.js";
+import type { ZenoConfig } from "../../storage/config.js";
 
-const baseConfig: NeuroConfig = {
+const baseConfig: ZenoConfig = {
   default: { model: "openai/gpt-4.1-mini", provider: "openai", streaming: true },
   aliases: {},
   context: { maxTokens: 100000, ignore: [] },
   permission: { mode: "default", autoApprove: {} }
-} as unknown as NeuroConfig;
+} as unknown as ZenoConfig;
 
 describe("detectFirstRun", () => {
   it("returns isFirstRun false when providers and aliases are set", () => {
     const config = {
       ...baseConfig,
       aliases: { fast: "openai/gpt-4.1-mini" }
-    } as NeuroConfig;
+    } as ZenoConfig;
     const state = detectFirstRun(config);
     // Note: actual provider state depends on global auth store; just check shape.
     expect(state).toHaveProperty("isFirstRun");

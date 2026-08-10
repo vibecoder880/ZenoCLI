@@ -1,5 +1,5 @@
 services:
-  neurocli:
+  zeno:
     build: .
     stdin_open: true
     tty: true
@@ -7,7 +7,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
     volumes:
-      - ${USERPROFILE}/.neurocli:/root/.neurocli
+      - ${USERPROFILE}/.zenocli:/root/.zenocli
       - .:/workspace
     working_dir: /workspace
     command: ["--help"]

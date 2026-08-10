@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, type NeuroConfig } from "../storage/config.js";
+import { DEFAULT_CONFIG, type ZenoConfig } from "../storage/config.js";
 
 export interface ProviderRoute {
   provider: string;
@@ -29,7 +29,7 @@ function inferProviderFromModel(model: string): string {
 }
 
 export function resolveModelRoute(
-  config: NeuroConfig,
+  config: ZenoConfig,
   model?: string,
   provider?: string
 ): ProviderRoute {

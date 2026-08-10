@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getProjectInstructionsPath } from "../../storage/paths.js";
 
-const DEFAULT_ENV_EXAMPLE = `# NeuroCLI environment example
+const DEFAULT_ENV_EXAMPLE = `# ZenoCLI environment example
 
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
@@ -21,9 +21,9 @@ OPENAI_OAUTH_CLIENT_SECRET=
 OPENAI_OAUTH_REDIRECT_URI=http://127.0.0.1:9876/callback
 `;
 
-const DEFAULT_NEURO_MD = `# NEURO.md
+const DEFAULT_ZENO_MD = `# ZENO.md
 
-Project-specific instructions for NeuroCLI.
+Project-specific instructions for ZenoCLI.
 
 - Describe architecture and boundaries
 - Point at the highest-priority directories
@@ -33,13 +33,13 @@ Project-specific instructions for NeuroCLI.
 export function runInitCommand(cwd: string): void {
   mkdirSync(cwd, { recursive: true });
 
-  const neuroPath = getProjectInstructionsPath(cwd);
+  const zenoPath = getProjectInstructionsPath(cwd);
   const envExamplePath = path.join(cwd, ".env.example");
   const created: string[] = [];
 
-  if (!existsSync(neuroPath)) {
-    writeFileSync(neuroPath, DEFAULT_NEURO_MD, "utf8");
-    created.push(neuroPath);
+  if (!existsSync(zenoPath)) {
+    writeFileSync(zenoPath, DEFAULT_ZENO_MD, "utf8");
+    created.push(zenoPath);
   }
 
   if (!existsSync(envExamplePath)) {
@@ -50,14 +50,14 @@ export function runInitCommand(cwd: string): void {
   if (created.length === 0) {
     console.log(`Workspace already initialized at ${cwd}`);
   } else {
-    console.log(`Initialized NeuroCLI workspace at ${cwd}`);
+    console.log(`Initialized ZenoCLI workspace at ${cwd}`);
     for (const target of created) {
       console.log(`Created ${target}`);
     }
   }
 
   console.log("Next steps:");
-  console.log("  1. Fill in .env.example or save credentials with `neuro auth login`");
-  console.log("  2. Edit NEURO.md with project-specific guidance");
-  console.log("  3. Run `neuro doctor` to verify readiness");
+  console.log("  1. Fill in .env.example or save credentials with `zeno auth login`");
+  console.log("  2. Edit ZENO.md with project-specific guidance");
+  console.log("  3. Run `zeno doctor` to verify readiness");
 }

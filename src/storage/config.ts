@@ -3,7 +3,7 @@ import path from "node:path";
 import * as toml from "@iarna/toml";
 import { ensureAppDataDirectory } from "./paths.js";
 
-export interface NeuroConfig {
+export interface ZenoConfig {
   default: {
     model: string;
     provider: string;
@@ -36,7 +36,7 @@ export interface NeuroConfig {
   };
 }
 
-export const DEFAULT_CONFIG: NeuroConfig = {
+export const DEFAULT_CONFIG: ZenoConfig = {
   default: {
     model: "openai/gpt-4.1-mini",
     provider: "openai",
@@ -68,7 +68,7 @@ function getConfigPath(): string {
   return path.join(ensureAppDataDirectory(), "config.toml");
 }
 
-function mergeConfig(partial: Partial<NeuroConfig> | undefined): NeuroConfig {
+function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
   return {
     default: {
       ...DEFAULT_CONFIG.default,
@@ -113,7 +113,7 @@ function mergeConfig(partial: Partial<NeuroConfig> | undefined): NeuroConfig {
   };
 }
 
-export function loadConfig(): NeuroConfig {
+export function loadConfig(): ZenoConfig {
   const configPath = getConfigPath();
 
   if (!existsSync(configPath)) {
@@ -122,11 +122,11 @@ export function loadConfig(): NeuroConfig {
   }
 
   const raw = readFileSync(configPath, "utf8");
-  const parsed = toml.parse(raw) as Partial<NeuroConfig>;
+  const parsed = toml.parse(raw) as Partial<ZenoConfig>;
   return mergeConfig(parsed);
 }
 
-export function saveConfig(config: NeuroConfig): void {
+export function saveConfig(config: ZenoConfig): void {
   const configPath = getConfigPath();
   writeFileSync(configPath, toml.stringify(config as unknown as toml.JsonMap), "utf8");
 }
@@ -135,7 +135,7 @@ export function getConfigPathname(): string {
   return getConfigPath();
 }
 
-export function updateConfig(mutator: (config: NeuroConfig) => NeuroConfig): NeuroConfig {
+export function updateConfig(mutator: (config: ZenoConfig) => ZenoConfig): ZenoConfig {
   const current = loadConfig();
   const next = mutator(current);
   saveConfig(next);

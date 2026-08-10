@@ -1,17 +1,17 @@
-# NeuroCli — Plugin Development Guide
+# ZenoCLI — Plugin Development Guide
 
-Hướng dẫn tạo plugins/skills/MCP servers cho NeuroCli.
+Hướng dẫn tạo plugins/skills/MCP servers cho ZenoCLI.
 
 ## Built-in Skills
 
 Skills là markdown files với frontmatter, loaded từ:
-- `~/.neurocli/skills/` (global)
-- `.neuro/skills/` (project)
+- `~/.Zenocli/skills/` (global)
+- `.zeno/skills/` (project)
 - `src/plugins/builtin/` (built-in)
 
 ### Tạo một Skill
 
-Tạo file `~/.neurocli/skills/deploy.md`:
+Tạo file `~/.Zenocli/skills/deploy.md`:
 
 ```markdown
 ---
@@ -38,11 +38,11 @@ Trigger skill với `/deploy` trong TUI.
 
 ## MCP Server Integration
 
-Model Context Protocol (MCP) cho phép NeuroCli kết nối với external tools.
+Model Context Protocol (MCP) cho phép ZenoCLI kết nối với external tools.
 
 ### Config
 
-Trong `~/.neurocli/config.toml`:
+Trong `~/.Zenocli/config.toml`:
 ```toml
 [mcp.servers.my-server]
 command = "node"
@@ -90,8 +90,8 @@ Tools từ MCP server tự động xuất hiện với namespace `mcp__server-na
 Tạo custom agent roles cho subagent spawning.
 
 ### File location
-- `~/.neurocli/agents/` (global)
-- `.neuro/agents/` (project)
+- `~/.Zenocli/agents/` (global)
+- `.zeno/agents/` (project)
 
 ### Format
 ```markdown

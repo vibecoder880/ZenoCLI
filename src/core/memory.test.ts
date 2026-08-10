@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { loadMemory, saveMemory, saveCorrection, savePreference, readFullMemory, getMemorySummary, writeProjectMemory } from "./memory.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-memory-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-memory-${Date.now()}`);
 
 beforeEach(() => {
   process.env.HOME = testDir;

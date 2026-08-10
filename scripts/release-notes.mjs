@@ -19,6 +19,6 @@ if (!match) {
   throw new Error(`Could not find changelog section for version ${version}.`);
 }
 
-const body = `# NeuroCLI ${version}\n\n${match[1].trim()}\n`;
+const body = `# ZenoCLI ${version}\n\n${match[1].trim()}\n`;
 fs.writeFileSync(outputPath, body, "utf8");
 console.log(`Release notes written to ${outputPath}`);

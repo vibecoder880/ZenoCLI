@@ -23,7 +23,7 @@ describe("Permissions", () => {
   it("identifies protected paths", () => {
     expect(isProtectedPath("/home/user/.bashrc")).toBe(true);
     expect(isProtectedPath("project/.git/config")).toBe(true);
-    expect(isProtectedPath("project/.neurocli/config")).toBe(true);
+    expect(isProtectedPath("project/.zenocli/config")).toBe(true);
     expect(isProtectedPath("normal-file.txt")).toBe(false);
   });
 

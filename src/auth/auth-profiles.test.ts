@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { AuthProfileStore, isProfileExpired } from "./auth-profiles.js";
 
-const tempHome = "D:/VibeCoder/NeuroCli/.tmp-home";
+const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-home";
 
 describe("AuthProfileStore", () => {
   beforeEach(() => {

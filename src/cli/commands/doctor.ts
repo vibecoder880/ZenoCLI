@@ -62,5 +62,5 @@ export async function runDoctorCommand(cwd: string): Promise<void> {
 
   console.log("Release Readiness");
   console.log(`  NPM_TOKEN present = ${Boolean(process.env.NPM_TOKEN)}`);
-  console.log(`  package name = neuro-cli`);
+  console.log(`  package name = zeno-cli`);
 }

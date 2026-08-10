@@ -9,7 +9,7 @@ import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
-const NPM_REGISTRY = "https://registry.npmjs.org/neuro-cli";
+const NPM_REGISTRY = "https://registry.npmjs.org/zeno-cli";
 const CHECK_TIMEOUT = 5000;
 
 export interface UpdateInfo {
@@ -99,7 +99,7 @@ export async function checkForUpdates(currentVersion: string = getCurrentVersion
       latest,
       hasUpdate,
       message: hasUpdate
-        ? `Update available: v${currentVersion} → v${latest}. Run: npm install -g neuro-cli@latest`
+        ? `Update available: v${currentVersion} → v${latest}. Run: npm install -g zeno-cli@latest`
         : `You're on the latest version (v${currentVersion})`,
     };
   } catch (err) {
@@ -123,5 +123,5 @@ export async function printUpdateNotification(): Promise<void> {
 
 // Cache path
 export function getUpdateCheckCachePath(): string {
-  return path.join(os.homedir(), ".neurocli", ".update-check");
+  return path.join(os.homedir(), ".zenocli", ".update-check");
 }

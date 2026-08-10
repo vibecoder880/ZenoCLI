@@ -33,7 +33,7 @@ const webSearchTool: ToolDefinition = {
       const url = `https://lite.duckduckgo.com/lite?q=${encodeURIComponent(query)}`;
       const response = await fetch(url, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; NeuroCli/1.0)",
+          "User-Agent": "Mozilla/5.0 (compatible; ZenoCli/1.0)",
         },
       });
 
@@ -110,7 +110,7 @@ const webFetchTool: ToolDefinition = {
     try {
       const response = await fetch(url, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; NeuroCli/1.0)",
+          "User-Agent": "Mozilla/5.0 (compatible; ZenoCli/1.0)",
         },
         signal: AbortSignal.timeout(15000),
       });

@@ -26,7 +26,7 @@ const program = new Command();
 const config = loadConfig();
 
 program
-  .name("neuro")
+  .name("zeno")
   .description("Professional terminal coding agent")
   .option("-m, --model <model>", "Model or alias to use", process.env.OPENAI_MODEL ?? config.default.model)
   .option("-p, --provider <provider>", "Provider to use", config.default.provider)
@@ -95,7 +95,7 @@ program
       return;
     }
 
-    throw new Error("Usage: neuro history list|show <id>|clear [--limit <count>]");
+    throw new Error("Usage: zeno history list|show <id>|clear [--limit <count>]");
   });
 
 program
@@ -122,7 +122,7 @@ program
 
 program
   .command("config")
-  .description("Show or update NeuroCLI config")
+  .description("Show or update ZenoCLI config")
   .argument("[action]", "show or set", "show")
   .argument("[key]", "Config key for set")
   .argument("[value]", "Config value for set")
@@ -137,12 +137,12 @@ program
       return;
     }
 
-    throw new Error("Usage: neuro config show | neuro config set <key> <value>");
+    throw new Error("Usage: zeno config show | zeno config set <key> <value>");
   });
 
 program
   .command("context")
-  .description("Show or manage project NEURO.md instructions")
+  .description("Show or manage project ZENO.md instructions")
   .argument("[action]", "show, init, or set", "show")
   .argument("[content]", "Content for context set")
   .option("--cwd <cwd>", "Working directory", process.cwd())
@@ -162,7 +162,7 @@ program
       return;
     }
 
-    throw new Error("Usage: neuro context show|init | neuro context set <content>");
+    throw new Error("Usage: zeno context show|init | zeno context set <content>");
   });
 
 program
@@ -175,7 +175,7 @@ program
 
 program
   .command("init")
-  .description("Bootstrap a workspace with NEURO.md and .env.example")
+  .description("Bootstrap a workspace with ZENO.md and .env.example")
   .argument("[targetCwd]", "Optional target directory")
   .action((targetCwd?: string) => {
     runInitCommand(targetCwd ?? process.cwd());
@@ -183,7 +183,7 @@ program
 
 program
   .command("version")
-  .description("Print the installed NeuroCLI version")
+  .description("Print the installed ZenoCLI version")
   .action(() => {
     runVersionCommand();
   });

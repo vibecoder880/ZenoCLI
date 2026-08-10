@@ -1,7 +1,7 @@
 /**
  * Task List — file-based task coordination cho teams.
  *
- * Tasks stored as JSONL tại ~/.neurocli/teams/{name}/tasks.jsonl
+ * Tasks stored as JSONL tại ~/.zenocli/teams/{name}/tasks.jsonl
  * Hỗ trợ dependencies (blocks/blockedBy), claim bằng file lock.
  */
 

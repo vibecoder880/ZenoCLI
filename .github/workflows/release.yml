@@ -45,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: neurocli-${{ matrix.os }}
+          name: zeno-cli-${{ matrix.os }}
           path: release/*
 
   publish:

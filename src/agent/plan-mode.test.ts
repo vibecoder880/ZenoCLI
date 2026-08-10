@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { PlanManager, createPlan, listPlans, type PlanStep } from "./plan-mode.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-plans-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-plans-${Date.now()}`);
 const testProject = path.join(testDir, "project");
 
 beforeEach(() => {

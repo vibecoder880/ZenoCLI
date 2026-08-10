@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { hasAnyActiveProfile, listMissingProviders } from "../../auth/auth-profiles.js";
-import type { NeuroConfig } from "../../storage/config.js";
+import type { ZenoConfig } from "../../storage/config.js";
 
 export interface FirstRunState {
   isFirstRun: boolean;
@@ -8,7 +8,7 @@ export interface FirstRunState {
   hasAnyProvider: boolean;
 }
 
-export function detectFirstRun(config: NeuroConfig): FirstRunState {
+export function detectFirstRun(config: ZenoConfig): FirstRunState {
   const missing = listMissingProviders();
   const hasAny = hasAnyActiveProfile();
   const isFirstRun = !hasAny || Object.keys(config.aliases ?? {}).length === 0;
@@ -20,6 +20,6 @@ export function detectFirstRun(config: NeuroConfig): FirstRunState {
   };
 }
 
-export function useFirstRun(config: NeuroConfig): FirstRunState {
+export function useFirstRun(config: ZenoConfig): FirstRunState {
   return useMemo(() => detectFirstRun(config), [config]);
 }

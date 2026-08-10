@@ -7,7 +7,7 @@ describe("version command", () => {
 
     runVersionCommand();
 
-    expect(log).toHaveBeenCalledWith("neuro-cli 0.2.0");
+    expect(log).toHaveBeenCalledWith("zeno-cli 0.2.0");
     log.mockRestore();
   });
 });

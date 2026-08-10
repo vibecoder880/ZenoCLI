@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { runConfigSetCommand, runConfigShowCommand } from "./config.js";
 
-const tempHome = "D:/VibeCoder/NeuroCli/.tmp-config-home";
+const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-config-home";
 
 describe("config commands", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

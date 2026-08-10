@@ -43,7 +43,7 @@ export function Header({
     >
       <Box>
         <Text bold color="cyan">
-          NeuroCLI
+          ZenoCLI
         </Text>
         <Text dimColor> · v{VERSION}</Text>
       </Box>

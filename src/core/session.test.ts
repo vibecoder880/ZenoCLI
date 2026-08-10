@@ -5,7 +5,7 @@ import os from "node:os";
 import { SessionWriter, SessionReader, listSessions, forkSession } from "./session.js";
 
 // Override paths for test isolation
-const testDir = path.join(os.tmpdir(), `.neuro-test-session-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-session-${Date.now()}`);
 
 beforeEach(() => {
   process.env.HOME = testDir;

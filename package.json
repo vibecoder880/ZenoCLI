@@ -1,16 +1,16 @@
 {
-  "name": "neuro-cli",
+  "name": "zeno-cli",
   "version": "0.2.0",
   "description": "A professional multi-provider terminal coding agent.",
   "license": "MIT",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qkhalk/NeuroCli.git"
+    "url": "git+https://github.com/qkhalk/ZenoCLI.git"
   },
-  "homepage": "https://github.com/qkhalk/NeuroCli#readme",
+  "homepage": "https://github.com/qkhalk/ZenoCLI#readme",
   "bugs": {
-    "url": "https://github.com/qkhalk/NeuroCli/issues"
+    "url": "https://github.com/qkhalk/ZenoCLI/issues"
   },
   "keywords": [
     "cli",
@@ -21,7 +21,7 @@
     "gemini"
   ],
   "bin": {
-    "neuro": "./dist/index.js"
+    "zeno": "./dist/index.js"
   },
   "files": [
     "dist",

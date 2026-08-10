@@ -3,7 +3,7 @@ import { rmSync } from "node:fs";
 import { appendHistoryEntry } from "../../storage/history.js";
 import { runCostCommand, runHistoryClearCommand, runHistoryListCommand, runHistoryShowCommand } from "./history.js";
 
-const tempHome = "D:/VibeCoder/NeuroCli/.tmp-command-history-home";
+const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-command-history-home";
 
 describe("history commands", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

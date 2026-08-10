@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { PromptCache } from "./prompt-cache.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-cache-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-cache-${Date.now()}`);
 
 beforeEach(() => {
   mkdirSync(testDir, { recursive: true });

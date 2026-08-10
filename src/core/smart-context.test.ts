@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { SmartContextLoader } from "./smart-context.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-smart-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-smart-${Date.now()}`);
 
 beforeEach(() => {
   mkdirSync(testDir, { recursive: true });

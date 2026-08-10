@@ -26,7 +26,7 @@ class MockProvider implements AiProvider {
   }
 }
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-subagent-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-subagent-${Date.now()}`);
 
 beforeEach(() => {
   process.env.HOME = testDir;

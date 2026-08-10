@@ -1,10 +1,10 @@
 /**
- * Enhanced NEURO.md hierarchical loader.
+ * Enhanced ZENO.md hierarchical loader.
  *
  * Loads instructions from multiple sources, merged in priority order:
- *   1. ~/.neurocli/NEURO.md  (global user instructions)
- *   2. .neuro/rules/*.md     (scoped rules by file pattern)
- *   3. NEURO.md files from root to cwd (project instructions)
+ *   1. ~/.zenocli/ZENO.md  (global user instructions)
+ *   2. .zeno/rules/*.md    (scoped rules by file pattern)
+ *   3. ZENO.md files from root to cwd (project instructions)
  *
  * All sources are additive. Duplicates are deduplicated.
  */
@@ -13,7 +13,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { getGlobalMemoryPath, getProjectRulesDirectory } from "../storage/paths.js";
 
-export interface NeuroMdSource {
+export interface ZenoMdSource {
   /** Absolute path to the source file. */
   filePath: string;
   /** Scope of this source. */
@@ -23,33 +23,33 @@ export interface NeuroMdSource {
 }
 
 /**
- * Load all NEURO.md instructions hierarchically.
+ * Load all ZENO.md instructions hierarchically.
  * Returns sources in priority order (global first, then root-to-cwd).
  */
-export function loadAllInstructions(cwd = process.cwd()): NeuroMdSource[] {
-  const sources: NeuroMdSource[] = [];
+export function loadAllInstructions(cwd = process.cwd()): ZenoMdSource[] {
+  const sources: ZenoMdSource[] = [];
 
   // 1. Global user instructions
   const globalPath = getGlobalMemoryPath();
-  // Note: global memory is at ~/.neurocli/MEMORY.md, global instructions at ~/.neurocli/NEURO.md
-  const globalNeuroMd = path.join(path.dirname(globalPath), "NEURO.md");
-  if (existsSync(globalNeuroMd)) {
-    const content = readFileSync(globalNeuroMd, "utf8").trim();
+  // Note: global memory is at ~/.zenocli/MEMORY.md, global instructions at ~/.zenocli/ZENO.md
+  const globalZenoMd = path.join(path.dirname(globalPath), "ZENO.md");
+  if (existsSync(globalZenoMd)) {
+    const content = readFileSync(globalZenoMd, "utf8").trim();
     if (content) {
-      sources.push({ filePath: globalNeuroMd, scope: "global", content });
+      sources.push({ filePath: globalZenoMd, scope: "global", content });
     }
   }
 
-  // 2. NEURO.md files from root to cwd (walk upward)
-  const neuroFiles = findNeuroMdFiles(cwd);
-  for (const filePath of neuroFiles) {
+  // 2. ZENO.md files from root to cwd (walk upward)
+  const zenoFiles = findZenoMdFiles(cwd);
+  for (const filePath of zenoFiles) {
     const content = readFileSync(filePath, "utf8").trim();
     if (content) {
       sources.push({ filePath, scope: "project", content });
     }
   }
 
-  // 3. .neuro/rules/*.md (scoped rules)
+  // 3. .zeno/rules/*.md (scoped rules)
   const rulesDir = getProjectRulesDirectory(cwd);
   if (existsSync(rulesDir)) {
     const ruleFiles = readdirSync(rulesDir)
@@ -91,18 +91,18 @@ export function getMergedInstructions(cwd = process.cwd()): string | undefined {
 }
 
 /**
- * Find NEURO.md files from root to cwd by walking upward.
+ * Find ZENO.md files from root to cwd by walking upward.
  * Returns paths in root-first order (most general to most specific).
  */
-function findNeuroMdFiles(cwd: string): string[] {
+function findZenoMdFiles(cwd: string): string[] {
   const files: string[] = [];
   let current = path.resolve(cwd);
 
   // Walk upward until we can't go further
   while (true) {
-    const neuroPath = path.join(current, "NEURO.md");
-    if (existsSync(neuroPath)) {
-      files.unshift(neuroPath); // prepend so root is first
+    const zenoPath = path.join(current, "ZENO.md");
+    if (existsSync(zenoPath)) {
+      files.unshift(zenoPath); // prepend so root is first
     }
 
     const parent = path.dirname(current);
@@ -120,7 +120,7 @@ export function getInstructionsSummary(cwd = process.cwd()): string {
   const sources = loadAllInstructions(cwd);
 
   if (sources.length === 0) {
-    return "No NEURO.md instructions loaded.";
+    return "No ZENO.md instructions loaded.";
   }
 
   return sources

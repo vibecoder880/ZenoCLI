@@ -8,7 +8,7 @@ coverage/
 .env
 .env.*
 *.log
-.neurocli/
+.zenocli/
 .tmp-home/
 *.local
 npm-debug.log*

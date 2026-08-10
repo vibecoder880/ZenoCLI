@@ -1,6 +1,6 @@
-# NeuroCLI
+# ZenoCLI
 
-NeuroCLI is a terminal coding assistant focused on a clean CLI, multiple model providers, local auth profile storage, and a pragmatic path to agentic workflows.
+ZenoCLI is a terminal coding assistant focused on a clean CLI, multiple model providers, local auth profile storage, and a pragmatic path to agentic workflows.
 
 ## Current scope
 
@@ -22,18 +22,18 @@ NeuroCLI is a terminal coding assistant focused on a clean CLI, multiple model p
 You can also save credentials locally:
 
 ```bash
-neuro auth login openai --method api-key
-neuro auth login anthropic --method api-key
-neuro auth login google --method api-key
-neuro auth status
-neuro auth refresh google
+zeno auth login openai --method api-key
+zeno auth login anthropic --method api-key
+zeno auth login google --method api-key
+zeno auth status
+zeno auth refresh google
 ```
 
 OAuth login is also supported:
 
 ```bash
-neuro auth login google --method oauth
-neuro auth login openai --method oauth --manual-code
+zeno auth login google --method oauth
+zeno auth login openai --method oauth --manual-code
 ```
 
 OAuth environment variables:
@@ -50,7 +50,7 @@ OPENAI_OAUTH_CLIENT_SECRET=...
 OPENAI_OAUTH_REDIRECT_URI=http://127.0.0.1:9876/callback
 ```
 
-Profiles are stored in `~/.neurocli/auth-profiles.json`. Config is stored in `~/.neurocli/config.toml`.
+Profiles are stored in `~/.zenocli/auth-profiles.json`. Config is stored in `~/.zenocli/config.toml`.
 
 ## Install and run
 
@@ -63,9 +63,9 @@ node dist/index.js --help
 Install globally from npm after publish:
 
 ```bash
-npm install -g neuro-cli
-neuro --help
-neuro version
+npm install -g zeno-cli
+zeno --help
+zeno version
 ```
 
 Run the TUI:
@@ -76,7 +76,7 @@ npm run dev
 
 ## Interactive TUI
 
-Run `neuro` (no subcommand) to open the interactive TUI. It features:
+Run `zeno` (no subcommand) to open the interactive TUI. It features:
 
 - **Sticky header** with provider, model, session, mode, permission, and live cost
 - **Welcome banner** on first run (auto-dismisses on first prompt) with auth status per provider
@@ -89,7 +89,7 @@ Example layout (first-run, no auth yet):
 
 ```
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ NeuroCLI · v0.2.0                                                            │
+│ ZenoCLI · v0.2.0                                                            │
 │ openai/gpt-4.1-mini                                                          │
 │ session abc-12345 · chat · Default · $0.0000 · 0 tok · 0 hist                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -110,7 +110,7 @@ Example layout (first-run, no auth yet):
 │ ✓ google                                                                     │
 │                                                                              │
 │ ⚠ Missing auth for: openai, anthropic                                        │
-│ Run: neuro auth openai                                                       │
+│ Run: zeno auth openai                                                       │
 │                                                                              │
 │ Type a prompt to begin. Try /help for commands.                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -123,7 +123,7 @@ Example layout (first-run, no auth yet):
 │ Conversation is empty. Type a prompt to begin.                               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-> Ask NeuroCLI to help (chat mode)
+> Ask ZenoCLI to help (chat mode)
 
  Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
 ```
@@ -166,7 +166,7 @@ Manage project context:
 ```bash
 node dist/index.js context init
 node dist/index.js context show
-node dist/index.js context set "# NEURO.md\nPrioritize src first."
+node dist/index.js context set "# ZENO.md\nPrioritize src first."
 ```
 
 Run diagnostics:
@@ -183,7 +183,7 @@ node dist/index.js init
 
 ## Model routing
 
-Default aliases live in `~/.neurocli/config.toml`:
+Default aliases live in `~/.zenocli/config.toml`:
 
 - `fast` -> `openai/gpt-4.1-mini`
 - `smart` -> `anthropic/claude-sonnet-4-0`
@@ -199,11 +199,11 @@ node dist/index.js chat "Summarize this file" --model google/gemini-2.5-pro
 
 ## Project instructions
 
-If a project contains `NEURO.md` in the working directory, NeuroCLI injects that file as project-specific guidance for chat and agent requests.
+If a project contains `ZENO.md` in the working directory, ZenoCLI injects that file as project-specific guidance for chat and agent requests.
 
 ## History and usage
 
-NeuroCLI stores local chat history in `~/.neurocli/history.json`.
+ZenoCLI stores local chat history in `~/.zenocli/history.json`.
 
 - `history` shows recent entries
 - `history show <id>` prints a full stored exchange
@@ -222,7 +222,7 @@ npm run build
 
 Detailed verification matrix:
 
-- See [docs/verification-checklist.md](D:/VibeCoder/NeuroCli/docs/verification-checklist.md)
+- See [docs/verification-checklist.md](D:/VibeCoder/ZenoCLI/docs/verification-checklist.md)
 
 ## Releases
 
@@ -237,7 +237,7 @@ When you push a tag like `v0.2.0`, GitHub Actions will:
 2. run tests, lint, and build
 3. package the app for each platform
 4. publish release assets on GitHub with changelog-based notes
-5. publish `neuro-cli` to npm if `NPM_TOKEN` is configured in repository secrets
+5. publish `zeno-cli` to npm if `NPM_TOKEN` is configured in repository secrets
 
 You can also run the packaging step locally:
 
@@ -248,4 +248,4 @@ npm run release:verify
 
 Continuous verification for pushes and pull requests runs in:
 
-- [D:/VibeCoder/NeuroCli/.github/workflows/ci.yml](D:/VibeCoder/NeuroCli/.github/workflows/ci.yml)
+- [D:/VibeCoder/ZenoCLI/.github/workflows/ci.yml](D:/VibeCoder/ZenoCLI/.github/workflows/ci.yml)

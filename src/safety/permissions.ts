@@ -39,8 +39,8 @@ export interface PermissionDecision {
 
 export const PROTECTED_PATHS = [
   ".git",
-  ".neurocli",
-  ".neuro",
+  ".zenocli",
+  ".zeno",
   ".vscode",
   ".husky",
   ".mcp.json",

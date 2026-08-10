@@ -60,7 +60,7 @@ const lspDiagnosticsTool: ToolDefinition = {
   },
   async execute(): Promise<ToolResult> {
     // LSP not available in pure tool context — requires LSP manager setup
-    return { output: "", error: "LSP not available in this context. Run neuro from a TypeScript project to enable LSP tools." };
+    return { output: "", error: "LSP not available in this context. Run zeno from a TypeScript project to enable LSP tools." };
   },
 };
 const spawnSubagentTool: ToolDefinition = {

@@ -2,9 +2,9 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { loadAllInstructions, getMergedInstructions, getInstructionsSummary } from "./neuro-md.js";
+import { loadAllInstructions, getMergedInstructions, getInstructionsSummary } from "./zeno-md.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-neuromd-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-zenomd-${Date.now()}`);
 const testProject = path.join(testDir, "project");
 const testProjectClean = path.join(testDir, "clean-project");
 
@@ -23,14 +23,14 @@ afterEach(() => {
   }
 });
 
-describe("NEURO.md Loading", () => {
-  it("returns empty when no NEURO.md exists", () => {
+describe("ZENO.md Loading", () => {
+  it("returns empty when no ZENO.md exists", () => {
     const sources = loadAllInstructions(testProject);
     expect(sources).toHaveLength(0);
   });
 
-  it("loads project NEURO.md from cwd", () => {
-    writeFileSync(path.join(testProject, "NEURO.md"), "# Test Project\nUse TypeScript strict mode.");
+  it("loads project ZENO.md from cwd", () => {
+    writeFileSync(path.join(testProject, "ZENO.md"), "# Test Project\nUse TypeScript strict mode.");
 
     const sources = loadAllInstructions(testProject);
     expect(sources).toHaveLength(1);
@@ -38,14 +38,14 @@ describe("NEURO.md Loading", () => {
     expect(sources[0].content).toContain("TypeScript strict mode");
   });
 
-  it("loads hierarchical NEURO.md files", () => {
+  it("loads hierarchical ZENO.md files", () => {
     const subDir = path.join(testProject, "src");
     mkdirSync(subDir, { recursive: true });
 
-    // Root NEURO.md
-    writeFileSync(path.join(testProject, "NEURO.md"), "Root instructions");
-    // Subdirectory NEURO.md
-    writeFileSync(path.join(subDir, "NEURO.md"), "Src instructions");
+    // Root ZENO.md
+    writeFileSync(path.join(testProject, "ZENO.md"), "Root instructions");
+    // Subdirectory ZENO.md
+    writeFileSync(path.join(subDir, "ZENO.md"), "Src instructions");
 
     const sources = loadAllInstructions(subDir);
     expect(sources).toHaveLength(2);
@@ -54,8 +54,8 @@ describe("NEURO.md Loading", () => {
     expect(sources[1].content).toBe("Src instructions");
   });
 
-  it("loads scoped rules from .neuro/rules/", () => {
-    const rulesDir = path.join(testProject, ".neuro", "rules");
+  it("loads scoped rules from .zeno/rules/", () => {
+    const rulesDir = path.join(testProject, ".zeno", "rules");
     mkdirSync(rulesDir, { recursive: true });
     writeFileSync(path.join(rulesDir, "typescript.md"), "Always use strict types");
     writeFileSync(path.join(rulesDir, "testing.md"), "Write tests for every feature");
@@ -69,7 +69,7 @@ describe("NEURO.md Loading", () => {
   });
 
   it("merges all sources into single string", () => {
-    writeFileSync(path.join(testProject, "NEURO.md"), "Project instructions");
+    writeFileSync(path.join(testProject, "ZENO.md"), "Project instructions");
 
     const merged = getMergedInstructions(testProject);
     expect(merged).toContain("Project instructions");
@@ -82,10 +82,10 @@ describe("NEURO.md Loading", () => {
   });
 
   it("provides summary for display", () => {
-    writeFileSync(path.join(testProject, "NEURO.md"), "Hello world");
+    writeFileSync(path.join(testProject, "ZENO.md"), "Hello world");
 
     const summary = getInstructionsSummary(testProject);
     expect(summary).toContain("project");
-    expect(summary).toContain("NEURO.md");
+    expect(summary).toContain("ZENO.md");
   });
 });

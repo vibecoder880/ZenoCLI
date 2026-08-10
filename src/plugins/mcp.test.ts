@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 
 describe("MCP Module (smoke test)", () => {
-  const testDir = path.join(os.tmpdir(), `.neuro-test-mcp-${Date.now()}`);
+  const testDir = path.join(os.tmpdir(), `.zeno-test-mcp-${Date.now()}`);
 
   beforeEach(() => {
     process.env.HOME = testDir;

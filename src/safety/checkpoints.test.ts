@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { CheckpointManager } from "./checkpoints.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-checkpoints-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-checkpoints-${Date.now()}`);
 
 beforeEach(() => {
   mkdirSync(testDir, { recursive: true });

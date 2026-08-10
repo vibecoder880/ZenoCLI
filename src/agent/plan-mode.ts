@@ -1,7 +1,7 @@
 /**
  * Plan Mode — agent đề xuất implementation plan, user review và approve.
  *
- * Plans stored trong .neuro/plans/ as markdown.
+ * Plans stored trong .zeno/plans/ as markdown.
  * Workflow:
  *   1. Agent analyzes request
  *   2. Proposes structured plan

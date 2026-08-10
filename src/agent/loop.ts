@@ -15,7 +15,7 @@ import { collectProviderText } from "../core/stream.js";
 import { ContextManager } from "../core/context-manager.js";
 import { type ToolExecutionContext, executeTool, getToolSpecsForPrompt, getToolDefinitionsForApi } from "./tool-registry.js";
 import { registerAllTools } from "./tools/index.js";
-import { getMergedInstructions } from "../core/neuro-md.js";
+import { getMergedInstructions } from "../core/zeno-md.js";
 import { loadMemory } from "../core/memory.js";
 import { SessionWriter } from "../core/session.js";
 import { CheckpointManager } from "../safety/checkpoints.js";
@@ -73,7 +73,7 @@ export interface AgentLoopResult {
 
 function buildSystemPrompt(toolSpecs: string, projectInstructions?: string, memoryContent?: string): string {
   const parts = [
-    "You are NeuroCLI, an intelligent coding agent.",
+    "You are ZenoCLI, an intelligent coding agent.",
     "",
     "You operate in an agentic loop: gather context → take action → verify results.",
     "You can use multiple tools in sequence to accomplish complex tasks.",

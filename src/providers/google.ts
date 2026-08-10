@@ -14,7 +14,7 @@ export class GoogleProvider implements AiProvider {
   ) {
     if (!apiKey) {
       throw new Error(
-        "Google credentials were not found. Use GOOGLE_API_KEY or `neuro auth login google --method api-key`."
+        "Google credentials were not found. Use GOOGLE_API_KEY or `zeno auth login google --method api-key`."
       );
     }
 

@@ -188,7 +188,7 @@ export class SmartContextLoader {
     if (/\.test\.|\.spec\./i.test(fileName)) tags.push("test");
     if (/\.config\.|rc\.|conf\./i.test(fileName)) tags.push("config");
     if (/index\.|main\./i.test(fileName)) tags.push("entry");
-    if (/NEURO\.md/i.test(fileName)) tags.push("instructions");
+    if (/ZENO\.md/i.test(fileName)) tags.push("instructions");
     return tags;
   }
 

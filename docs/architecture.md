@@ -1,11 +1,11 @@
-# NeuroCli — Architecture
+# ZenoCLI — Architecture
 
 **Version**: 0.6.0 (Phase 4 complete)
 **Status**: Production-ready alpha
 
 ## Overview
 
-NeuroCli là một **intelligent agentic coding CLI** được thiết kế với parity gần hoàn chỉnh với Claude Code. Hỗ trợ nhiều LLM providers, tool system, multi-agent coordination, và safety controls.
+ZenoCLI là một **intelligent agentic coding CLI** được thiết kế với parity gần hoàn chỉnh với Claude Code. Hỗ trợ nhiều LLM providers, tool system, multi-agent coordination, và safety controls.
 
 ## Core Architecture
 
@@ -51,7 +51,7 @@ Agent Loop (orchestrator)
 - **context-manager.ts** — Token-aware context window, auto-compaction
 - **session.ts** — JSONL session persistence
 - **memory.ts** — Cross-session memory (MEMORY.md)
-- **neuro-md.ts** — Hierarchical NEURO.md loader
+- **zeno-md.ts** — Hierarchical ZENO.md loader
 - **smart-context.ts** — File indexing, suggestion engine
 - **prompt-cache.ts** — System prompt caching
 - **context-budget.ts** — Per-turn budget management
@@ -142,7 +142,7 @@ Agent Loop (orchestrator)
 
 ## Configuration
 
-`~/.neurocli/config.toml`:
+`~/.Zenocli/config.toml`:
 ```toml
 [default]
 model = "openai/gpt-4.1-mini"

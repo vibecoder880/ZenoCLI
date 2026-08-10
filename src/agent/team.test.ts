@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { TeamManager, listTeams } from "./team.js";
 
-const testDir = path.join(os.tmpdir(), `.neuro-test-team-${Date.now()}`);
+const testDir = path.join(os.tmpdir(), `.zeno-test-team-${Date.now()}`);
 
 beforeEach(() => {
   process.env.HOME = testDir;

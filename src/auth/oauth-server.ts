@@ -8,7 +8,7 @@ export async function waitForOAuthCode(port = 9876, timeoutMs = 120_000): Promis
 
       response.statusCode = 200;
       response.setHeader("Content-Type", "text/plain; charset=utf-8");
-      response.end("NeuroCLI login received. You can close this tab.");
+      response.end("ZenoCLI login received. You can close this tab.");
 
       clearTimeout(timer);
       server.close();

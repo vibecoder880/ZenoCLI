@@ -15,7 +15,7 @@ export class AnthropicProvider implements AiProvider {
   ) {
     if (!apiKey) {
       throw new Error(
-        "Anthropic credentials were not found. Use ANTHROPIC_API_KEY or `neuro auth login anthropic --method api-key`."
+        "Anthropic credentials were not found. Use ANTHROPIC_API_KEY or `zeno auth login anthropic --method api-key`."
       );
     }
 

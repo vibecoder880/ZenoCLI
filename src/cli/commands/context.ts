@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getProjectInstructionsPath } from "../../storage/paths.js";
 
-const DEFAULT_CONTEXT = `# NEURO.md
+const DEFAULT_CONTEXT = `# ZENO.md
 
-Project-specific instructions for NeuroCLI.
+Project-specific instructions for ZenoCLI.
 
 - Describe coding standards
 - Call out folders to prioritize
@@ -15,7 +15,7 @@ export function runContextShowCommand(cwd: string): void {
   const targetPath = getProjectInstructionsPath(cwd);
 
   if (!existsSync(targetPath)) {
-    console.log(`No NEURO.md found at ${targetPath}`);
+    console.log(`No ZENO.md found at ${targetPath}`);
     return;
   }
 
@@ -32,7 +32,7 @@ export function runContextInitCommand(cwd: string): void {
     return;
   }
 
-  console.log(`NEURO.md already exists at ${targetPath}`);
+  console.log(`ZENO.md already exists at ${targetPath}`);
 }
 
 export function runContextSetCommand(cwd: string, content: string): void {

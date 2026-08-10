@@ -16,7 +16,7 @@ export class OpenAiProvider implements AiProvider {
   ) {
     if (!apiKey) {
       throw new Error(
-        "OpenAI credentials were not found. Use OPENAI_API_KEY or `neuro auth login openai --method api-key`."
+        "OpenAI credentials were not found. Use OPENAI_API_KEY or `zeno auth login openai --method api-key`."
       );
     }
 

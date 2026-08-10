@@ -1,7 +1,7 @@
 /**
  * Session persistence — save/resume/fork conversations as JSONL files.
  *
- * Sessions are stored at ~/.neurocli/projects/{hash}/sessions/{id}.jsonl
+ * Sessions are stored at ~/.zenocli/projects/{hash}/sessions/{id}.jsonl
  */
 
 import { existsSync, readdirSync, readFileSync, appendFileSync, writeFileSync } from "node:fs";
