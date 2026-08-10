@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ensureAppDataDirectory } from "../storage/paths.js";
+import { encryptSecret, decryptSecret, isEncrypted } from "./secret-crypto.js";
 
 export type AuthProfile =
   | { type: "api_key"; provider: string; key: string; label?: string }
@@ -35,6 +36,43 @@ function getStorePath(): string {
   return path.join(ensureAppDataDirectory(), "auth-profiles.json");
 }
 
+/** Secret field names per profile type that are encrypted at rest. */
+function secretFields(profile: StoredAuthProfile): Array<[string, string]> {
+  const fields: Array<[string, string]> = [];
+  for (const field of ["key", "access", "refresh", "token"] as const) {
+    const value = (profile as Record<string, unknown>)[field];
+    if (typeof value === "string" && value.length > 0 && !isEncrypted(value)) {
+      fields.push([field, value]);
+    }
+  }
+  return fields;
+}
+
+/** Encrypt a profile's secret fields in place, returning a deep-ish copy. */
+function encryptProfile(profile: StoredAuthProfile): StoredAuthProfile {
+  const result = { ...profile } as StoredAuthProfile;
+  for (const [field, value] of secretFields(profile)) {
+    (result as Record<string, unknown>)[field] = encryptSecret(value);
+  }
+  return result;
+}
+
+/** Decrypt a profile's secret fields in place, tolerating legacy plaintext. */
+function decryptProfile(profile: StoredAuthProfile): StoredAuthProfile {
+  const result = { ...profile } as StoredAuthProfile;
+  for (const field of ["key", "access", "refresh", "token"] as const) {
+    const value = (result as Record<string, unknown>)[field];
+    if (typeof value === "string" && isEncrypted(value)) {
+      const decrypted = decryptSecret(value);
+      if (decrypted !== null) {
+        (result as Record<string, unknown>)[field] = decrypted;
+      }
+    }
+    // Legacy plaintext values pass through unchanged.
+  }
+  return result;
+}
+
 function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
 }
@@ -57,11 +95,20 @@ export class AuthProfileStore {
       return DEFAULT_STORE;
     }
 
-    return JSON.parse(readFileSync(storePath, "utf8")) as AuthStoreData;
+    const parsed = JSON.parse(readFileSync(storePath, "utf8")) as AuthStoreData;
+    const profiles: Record<string, StoredAuthProfile> = {};
+    for (const [id, profile] of Object.entries(parsed.profiles ?? {})) {
+      profiles[id] = decryptProfile(profile);
+    }
+    return { ...parsed, profiles };
   }
 
   public save(data: AuthStoreData): void {
-    writeFileSync(getStorePath(), JSON.stringify(data, null, 2), "utf8");
+    const profiles: Record<string, StoredAuthProfile> = {};
+    for (const [id, profile] of Object.entries(data.profiles ?? {})) {
+      profiles[id] = encryptProfile(profile);
+    }
+    writeFileSync(getStorePath(), JSON.stringify({ ...data, profiles }, null, 2), "utf8");
   }
 
   public listProfiles(provider?: string): StoredAuthProfile[] {
