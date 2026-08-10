@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { appendHistoryEntry } from "../../storage/history.js";
 import { runCostCommand, runHistoryClearCommand, runHistoryListCommand, runHistoryShowCommand } from "./history.js";
 
-const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-command-history-home";
+const tempHome = path.join(os.tmpdir(), `.zeno-test-command-history-${Date.now()}`);
 
 describe("history commands", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -22,7 +24,7 @@ describe("history commands", () => {
 
   it("lists, shows, and clears stored history", () => {
     const entry = appendHistoryEntry({
-      cwd: "D:/repo",
+      cwd: tempHome,
       provider: "openai",
       model: "gpt-4.1-mini",
       prompt: "hello",

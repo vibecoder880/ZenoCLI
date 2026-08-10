@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { runContextInitCommand, runContextSetCommand, runContextShowCommand } from "./context.js";
 
-const tempDir = "D:/VibeCoder/ZenoCLI/.tmp-context-workspace";
+const tempDir = path.join(os.tmpdir(), `.zeno-test-context-${Date.now()}`);
 
 describe("context commands", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

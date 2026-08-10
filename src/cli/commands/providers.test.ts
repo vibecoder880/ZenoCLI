@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { runHealthCommand, runModelsCommand } from "./providers.js";
 
-const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-providers-home";
+const tempHome = path.join(os.tmpdir(), `.zeno-test-providers-${Date.now()}`);
 
 describe("provider commands", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

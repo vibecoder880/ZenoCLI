@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, rmSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { runInitCommand } from "./init.js";
 
-const tempWorkspace = "D:/VibeCoder/ZenoCLI/.tmp-init-workspace";
+const tempWorkspace = path.join(os.tmpdir(), `.zeno-test-init-${Date.now()}`);
 
 describe("init command", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { runDoctorCommand } from "./doctor.js";
 
-const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-doctor-home";
-const tempWorkspace = "D:/VibeCoder/ZenoCLI/.tmp-doctor-workspace";
+const tempHome = path.join(os.tmpdir(), `.zeno-test-doctor-home-${Date.now()}`);
+const tempWorkspace = path.join(os.tmpdir(), `.zeno-test-doctor-workspace-${Date.now()}`);
 
 describe("doctor command", () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

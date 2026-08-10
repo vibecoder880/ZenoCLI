@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "./history.js";
 
-const tempHome = "D:/VibeCoder/ZenoCLI/.tmp-history-home";
+const tempHome = path.join(os.tmpdir(), `.zeno-test-history-${Date.now()}`);
 
 describe("history storage", () => {
   beforeEach(() => {
@@ -18,7 +20,7 @@ describe("history storage", () => {
 
   it("stores entries and summarizes tokens", () => {
     appendHistoryEntry({
-      cwd: "D:/repo",
+      cwd: tempHome,
       provider: "openai",
       model: "gpt-4.1-mini",
       prompt: "hello",
