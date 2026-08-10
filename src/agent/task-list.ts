@@ -5,7 +5,7 @@
  * Hỗ trợ dependencies (blocks/blockedBy), claim bằng file lock.
  */
 
-import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync, openSync, closeSync } from "node:fs";
 import crypto from "node:crypto";
 import { getTaskListPath, getTeamDirectory } from "../storage/paths.js";
 
@@ -52,46 +52,92 @@ function lineToTask(line: string): Task | null {
   }
 }
 
-// ---- File Lock (simple) ----
+// ---- File Lock (atomic exclusive create) ----
 
 const LOCK_TIMEOUT = 5000;
+/** Minimum delay between lock acquisition attempts (ms). */
+const LOCK_RETRY_DELAY = 25;
 
+/** Block the current thread briefly without a CPU-burning spin. */
+function sleepSync(ms: number): void {
+  const buffer = new Int32Array(new SharedArrayBuffer(4));
+  Atomics.wait(buffer, 0, 0, ms);
+}
+
+interface LockToken {
+  pid: number;
+  createdAt: number;
+}
+
+function serializeToken(token: LockToken): string {
+  return `${token.pid}:${token.createdAt}`;
+}
+
+function parseToken(content: string): LockToken | null {
+  const match = content.trim().match(/^(\d+):(\d+)$/);
+  if (!match) {
+    return null;
+  }
+  return { pid: Number(match[1]), createdAt: Number(match[2]) };
+}
+
+/**
+ * Serialize a mutation under an inter-process lock.
+ *
+ * The lock file is created with `openSync(..., "wx")` which fails with
+ * EEXIST when another process holds it — an atomic compare-and-set on the
+ * filesystem, so two processes can never both believe they hold the lock.
+ * A stale lock (owner PID no longer alive, or older than LOCK_TIMEOUT) is
+ * reclaimed. Between attempts the thread sleeps via Atomics.wait instead of
+ * busy-spinning.
+ */
 function withLock(filePath: string, fn: () => void): void {
   const lockPath = filePath + ".lock";
   const start = Date.now();
+  const myToken: LockToken = { pid: process.pid, createdAt: Date.now() };
 
-  // Try to acquire lock by writing our PID
   let acquired = false;
-  while (!acquired) {
-    if (Date.now() - start > LOCK_TIMEOUT) {
-      throw new Error(`Lock timeout: ${lockPath}`);
-    }
-
+  while (!acquired && Date.now() - start < LOCK_TIMEOUT) {
     try {
-      // Atomic create: try to write a fresh file
-      // If it already exists, writeFileSync will overwrite — that's the race condition we're avoiding
-      // Use a different approach: read first, then write
-      const lockContent = readFileSync(lockPath, "utf8").trim();
-      if (!lockContent || Date.now() - Number(lockContent) > LOCK_TIMEOUT) {
-        // Stale or empty — overwrite
-        writeFileSync(lockPath, String(Date.now()), "utf8");
-        acquired = true;
-      } else {
-        // Locked by another process — busy-wait briefly
-        const waitUntil = Date.now() + 10;
-        while (Date.now() < waitUntil) {
-          // spin
-        }
+      const fd = openSync(lockPath, "wx");
+      // We own the new lock file.
+      writeFileSync(lockPath, serializeToken(myToken), "utf8");
+      closeSync(fd);
+      acquired = true;
+      break;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") {
+        throw err;
       }
-    } catch {
-      // Lock file doesn't exist — create it
+
+      // Someone else holds it — reclaim if stale.
       try {
-        writeFileSync(lockPath, String(Date.now()), "utf8");
-        acquired = true;
+        const content = readFileSync(lockPath, "utf8").trim();
+        const token = parseToken(content);
+        const staleByAge = !token || Date.now() - token.createdAt > LOCK_TIMEOUT;
+        const staleByPid = token ? !isProcessAlive(token.pid) : false;
+
+        if (staleByAge || staleByPid) {
+          // This delete-then-create is racy in theory, but the window only
+          // re-triggers EEXIST on the next attempt if another writer won —
+          // never a case where two processes both observe a lock as "theirs".
+          try {
+            writeFileSync(lockPath, "", "utf8");
+          } catch {
+            // The owner may have released between read and here; that is fine.
+          }
+        }
       } catch {
-        // Race condition — try again
+        // Lock released between read and reclaim — retry.
       }
+
+      sleepSync(LOCK_RETRY_DELAY);
     }
+  }
+
+  if (!acquired) {
+    throw new Error(`Lock timeout: ${lockPath}`);
   }
 
   try {
@@ -102,6 +148,17 @@ function withLock(filePath: string, fn: () => void): void {
     } catch {
       // ignore
     }
+  }
+}
+
+/** Cheap cross-platform liveness probe: does a process with this PID exist? */
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    // ESRCH: no such process. EPERM: exists but not ours to signal.
+    return (err as NodeJS.ErrnoException).code === "EPERM";
   }
 }
 

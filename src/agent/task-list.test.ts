@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, writeFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { TaskList, ensureTeamDirectory } from "./task-list.js";
@@ -157,6 +157,39 @@ describe("TaskList", () => {
     expect(tl.canClaim(c.id)).toBe(false); // b not done
     tl.complete(b.id);
     expect(tl.canClaim(c.id)).toBe(true);
+  });
+});
+
+describe("task-list file lock", () => {
+  it("does not corrupt the file under overlapping writers", () => {
+    const left = new TaskList("lock-team");
+    const right = new TaskList("lock-team");
+
+    // Interleave creates through two instances sharing one tasks.jsonl.
+    left.create({ subject: "L1", description: "" });
+    right.create({ subject: "R1", description: "" });
+    left.create({ subject: "L2", description: "" });
+    right.create({ subject: "R2", description: "" });
+
+    const rows = left.loadAll();
+    expect(rows.map((t) => t.subject).sort()).toEqual(["L1", "L2", "R1", "R2"]);
+  });
+
+  it("stale lock from a dead owner is reclaimed", () => {
+    const tl = new TaskList("stale-team");
+    // Simulate a lock file whose owning PID no longer exists.
+    const lockPath = path.join(
+      testDir,
+      ".zenocli",
+      "teams",
+      "stale-team",
+      "tasks.jsonl.lock",
+    );
+    writeFileSync(lockPath, "999999:1000", "utf8");
+
+    const task = tl.create({ subject: "After stale", description: "" });
+    expect(task.subject).toBe("After stale");
+    expect(tl.loadAll()).toHaveLength(1);
   });
 });
 
