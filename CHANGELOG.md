@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.1 - 2026-08-11
+
+### Bugfix + Harden release
+
+### Features
+- Multi-platform release packaging: artifacts are now built and named for linux-x64, windows-x64, and macos-x64
+- Release notes are automatically categorized into Features / Fixes / Docs / Other instead of dumping the raw changelog
+- macOS runners added to the release workflow matrix so every tagged version ships a macOS build
+
+### Fixes
+- Fix task-list file lock racing: atomic exclusive-create via `openSync("wx")` with stale-lock reclaim; lock file is unlinked on release so consecutive operations no longer time out
+- Fix OAuth CSRF: the local redirect server now validates the `state` parameter and rejects mismatched callbacks
+- Fix filesystem tools escaping the workspace: absolute and `../` paths are blocked at a single choke point
+- Fix `run_command` safety bypasses: destructive recursive deletes and interpreter one-liners are rejected
+- Fix hardcoded Windows-only test temp paths so the Ubuntu CI matrix runs clean
+
+### Security
+- Encrypt stored auth secrets (API keys, OAuth access/refresh tokens) at rest with AES-256-GCM using a machine-local key
+
 ## 0.7.0 - 2026-06-13
 
 ### Phase 5: TUI Parity với Claude Code
