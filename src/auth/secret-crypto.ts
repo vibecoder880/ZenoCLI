@@ -14,8 +14,8 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import { ensureAppDataDirectory } from "../storage/paths.js";
 
 const ALGORITHM = "aes-256-gcm";
+/** GCM authentication tag length in bytes. */
 const IV_LENGTH = 12;
-const TAG_LENGTH = 16;
 
 /** Read the machine key, creating it (0600) on first use. */
 export function getMachineKey(): Buffer {

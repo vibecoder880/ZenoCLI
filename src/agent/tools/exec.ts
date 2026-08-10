@@ -50,9 +50,6 @@ const BLOCK_RULES: BlockRule[] = [
   { pattern: /\bwget\s+.*\|\s*(?:ba)?sh/i, reason: "Piping wget output to a shell is blocked" },
 ];
 
-/** Recursive/force delete commands. */
-const DELETE_CMDS = ["rm", "rmdir", "del", "unlink", "del /s", "rmdir /s"];
-
 /** Interpreters whose -c / -e one-liners can wrap arbitrary system calls. */
 const INTERPRETERS = /\b(sh|bash|zsh|dash|python|python3|perl|ruby|php|node|nodejs|bash|powershell|pwsh)\s+(-c|-e|--%C|--command)\b/i;
 
