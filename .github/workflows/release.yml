@@ -46,7 +46,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zeno-cli-${{ matrix.os }}
-          path: release/*
+          path: |
+            release/*.tar.gz
+            release/*.zip
 
   publish:
     if: startsWith(github.ref, 'refs/tags/')
