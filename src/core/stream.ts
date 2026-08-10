@@ -30,11 +30,11 @@ export async function collectProviderText(
 
   // Watch the signal so a mid-stream abort races the next chunk and unblocks
   // the caller even when a provider adapter does not honour the signal itself.
-  let onAbort: ((reason: Error) => void) | undefined;
+  let onAbort: (() => void) | undefined;
   const abortPromise = signal
     ? new Promise<never>((_, reject) => {
-        onAbort = reject;
-        signal.addEventListener("abort", () => reject(abortError(signal)), { once: true });
+        onAbort = () => reject(abortError(signal));
+        signal.addEventListener("abort", onAbort, { once: true });
       })
     : undefined;
 
@@ -101,7 +101,7 @@ export async function collectProviderText(
     }
   } finally {
     if (onAbort) {
-      signal?.removeEventListener("abort", onAbort as EventListener);
+      signal?.removeEventListener("abort", onAbort);
     }
   }
 
