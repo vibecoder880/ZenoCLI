@@ -38,6 +38,7 @@ export class GoogleProvider implements AiProvider {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: request.signal,
         body: JSON.stringify({
           systemInstruction: this.toSystemInstruction(request),
           contents: request.messages

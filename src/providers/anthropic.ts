@@ -43,13 +43,16 @@ export class AnthropicProvider implements AiProvider {
     }));
 
     // Use streaming for real-time output
-    const stream = this.client.messages.stream({
-      model: request.model,
-      max_tokens: 8192,
-      system: systemContent || undefined,
-      messages: apiMessages,
-      ...(tools && tools.length > 0 ? { tools } : {}),
-    });
+    const stream = this.client.messages.stream(
+      {
+        model: request.model,
+        max_tokens: 8192,
+        system: systemContent || undefined,
+        messages: apiMessages,
+        ...(tools && tools.length > 0 ? { tools } : {}),
+      },
+      { signal: request.signal }
+    );
 
     let inputTokens = 0;
     let outputTokens = 0;

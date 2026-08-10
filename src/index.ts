@@ -63,13 +63,18 @@ program
   .option("-p, --provider <provider>", "Provider override")
   .option("--cwd <cwd>", "Working directory", process.cwd())
   .option("--max-turns <count>", "Maximum reasoning turns", "8")
-  .action(async (task: string, options: { model?: string; provider?: string; cwd: string; maxTurns: string }) => {
+  .option("--non-interactive", "Run headless for CI/CD: plain stdout, no TTY decorations")
+  .option("--pipe", "Alias for --non-interactive (pipe-friendly output)")
+  .option("--retries <count>", "Retries on retryable provider errors", "0")
+  .action(async (task: string, options: { model?: string; provider?: string; cwd: string; maxTurns: string; nonInteractive?: boolean; pipe?: boolean; retries?: string }) => {
     await runAgentCommand({
       task,
       model: options.model,
       provider: options.provider,
       cwd: options.cwd,
-      maxTurns: Number(options.maxTurns)
+      maxTurns: Number(options.maxTurns),
+      nonInteractive: Boolean(options.nonInteractive || options.pipe),
+      maxRetries: Number(options.retries ?? "0")
     });
   });
 

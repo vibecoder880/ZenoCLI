@@ -54,6 +54,8 @@ export interface ChatRequest {
   messages: ChatMessage[];
   /** If provided, the provider should use native tool calling. */
   tools?: ToolSpec[];
+  /** Optional signal to cancel an in-flight streaming request. */
+  signal?: AbortSignal;
 }
 
 export type StreamEvent =

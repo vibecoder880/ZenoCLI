@@ -60,6 +60,12 @@ export interface AgentLoopOptions {
   hooks?: HookRunner;
   /** Permission prompt handler — returns true to allow, false to deny. */
   onPermissionPrompt?: (toolName: string, params: Record<string, unknown>, reason?: string) => Promise<boolean>;
+  /** Abort signal to cancel the loop (checked per turn and before tool calls). */
+  signal?: AbortSignal;
+  /** Max retries for retryable provider errors (default: 0). */
+  maxRetries?: number;
+  /** Base retry delay in ms; doubles with backoff each retry (default: 1000). */
+  retryBaseDelayMs?: number;
 }
 
 export interface AgentLoopResult {
@@ -67,6 +73,8 @@ export interface AgentLoopResult {
   totalTokens: number;
   turns: number;
   toolsUsed: string[];
+  /** True when the loop stopped because the abort signal fired. */
+  aborted?: boolean;
 }
 
 // ---- System Prompt ----
@@ -138,7 +146,17 @@ export async function runAgentLoop(options: AgentLoopOptions): Promise<AgentLoop
   let totalTokens = 0;
   const toolsUsed: string[] = [];
 
+  const maxRetries = options.maxRetries ?? 0;
+  const retryBaseDelayMs = options.retryBaseDelayMs ?? 1000;
+
   for (let turn = 0; turn < maxTurns; turn++) {
+    // Respect abort signal before starting each turn.
+    if (isAborted(options.signal)) {
+      const message = "Cancelled by user (abort signal).";
+      options.onEvent?.({ type: "error", content: message });
+      return { message, totalTokens, turns: turn, toolsUsed, aborted: true };
+    }
+
     // Check for mid-turn user corrections
     if (options.pendingUserMessages && options.pendingUserMessages.length > 0) {
       const correction = options.pendingUserMessages.shift()!;
@@ -162,13 +180,25 @@ export async function runAgentLoop(options: AgentLoopOptions): Promise<AgentLoop
     const messages = ctx.toMessages();
 
     try {
-      // Call provider with native tool definitions
-      const result = await collectProviderText(
-        options.provider,
-        options.model,
-        messages,
-        options.onStream,
-        toolDefs,
+      // Call provider with native tool definitions, honouring the abort signal
+      // and retrying retryable provider errors with bounded backoff.
+      const result = await callWithRetry(
+        () =>
+          collectProviderText(
+            options.provider,
+            options.model,
+            messages,
+            options.onStream,
+            toolDefs,
+            options.signal,
+          ),
+        {
+          signal: options.signal,
+          maxRetries,
+          baseDelayMs: retryBaseDelayMs,
+          onRetry: (attempt, delayMs, message) =>
+            options.onEvent?.({ type: "error", content: `Provider request failed (${message}); retry ${attempt}/${maxRetries} in ${delayMs}ms` }),
+        },
       );
 
       totalTokens += result.totalTokens;
@@ -186,6 +216,12 @@ export async function runAgentLoop(options: AgentLoopOptions): Promise<AgentLoop
         });
 
         for (const toolCall of result.toolCalls) {
+          // Stop mid-batch if aborted after a tool call executed.
+          if (isAborted(options.signal)) {
+            const message = "Cancelled by user (abort signal).";
+            options.onEvent?.({ type: "error", content: message });
+            return { message, totalTokens, turns: turn + 1, toolsUsed, aborted: true };
+          }
           await handleToolCall(toolCall, options, ctx, toolsUsed);
         }
       } else if (result.text) {
@@ -206,6 +242,11 @@ export async function runAgentLoop(options: AgentLoopOptions): Promise<AgentLoop
             name: parsed.tool,
             arguments: parsed.args,
           };
+          if (isAborted(options.signal)) {
+            const message = "Cancelled by user (abort signal).";
+            options.onEvent?.({ type: "error", content: message });
+            return { message, totalTokens, turns: turn + 1, toolsUsed, aborted: true };
+          }
           await handleToolCall(fakeCall, options, ctx, toolsUsed);
         } else if (parsed && parsed.type === "final") {
           // Final response
@@ -242,6 +283,13 @@ export async function runAgentLoop(options: AgentLoopOptions): Promise<AgentLoop
         }
       }
     } catch (err) {
+      // An abort must surface as a clean stop, not as a "continue" turn.
+      if (isAborted(options.signal) || (err instanceof Error && err.name === "AbortError")) {
+        const message = "Cancelled by user (abort signal).";
+        options.onEvent?.({ type: "error", content: message });
+        return { message, totalTokens, turns: turn + 1, toolsUsed, aborted: true };
+      }
+
       const message = err instanceof Error ? err.message : String(err);
       options.onEvent?.({ type: "error", content: message });
 
@@ -361,8 +409,11 @@ async function handleToolCall(
     timestamp: new Date().toISOString(),
   });
 
-  // Execute the tool
-  const result = await executeTool(name, args, options.toolContext);
+  // Execute the tool (honours the loop abort signal when the tool supports it)
+  const result = await executeTool(name, args, {
+    ...options.toolContext,
+    signal: options.signal,
+  });
 
   if (!toolsUsed.includes(name)) {
     toolsUsed.push(name);
@@ -430,5 +481,66 @@ function tryParseAgentJson(text: string): { type: "tool_call"; tool: string; arg
     return null;
   } catch {
     return null;
+  }
+}
+
+// ---- Abort + retry helpers ----
+
+function isAborted(signal?: AbortSignal): boolean {
+  return signal?.aborted === true;
+}
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Is this provider error worth a bounded retry? */
+function isRetryableError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  // Aborts must never be retried.
+  if (err.name === "AbortError") {
+    return false;
+  }
+  const message = err.message.toLowerCase();
+  return (
+    /rate limit|429|too many|overloaded|500|502|503|504|interrupted|timeout|temporarily/.test(
+      message
+    ) ||
+    err.name === "TimeoutError"
+  );
+}
+
+/**
+ * Run fn with bounded exponential backoff on retryable errors.
+ * Non-retryable errors and aborts propagate immediately.
+ */
+async function callWithRetry<T>(
+  fn: () => Promise<T>,
+  opts: {
+    signal?: AbortSignal;
+    maxRetries: number;
+    baseDelayMs: number;
+    onRetry?: (attempt: number, delayMs: number, message: string) => void;
+  }
+): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt >= opts.maxRetries || !isRetryableError(err)) {
+        throw err;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      const delayMs = opts.baseDelayMs * 2 ** attempt;
+      attempt += 1;
+      opts.onRetry?.(attempt, delayMs, message);
+      await sleepMs(delayMs);
+      if (opts.signal?.aborted) {
+        throw new Error("Cancelled by user (abort signal).");
+      }
+    }
   }
 }

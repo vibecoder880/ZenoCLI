@@ -38,12 +38,15 @@ export class OpenAiProvider implements AiProvider {
       },
     }));
 
-    const stream = await this.client.chat.completions.create({
-      model: request.model,
-      messages: request.messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-      stream: true,
-      ...(tools && tools.length > 0 ? { tools } : {}),
-    });
+    const stream = await this.client.chat.completions.create(
+      {
+        model: request.model,
+        messages: request.messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+        stream: true,
+        ...(tools && tools.length > 0 ? { tools } : {}),
+      },
+      { signal: request.signal }
+    );
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;
