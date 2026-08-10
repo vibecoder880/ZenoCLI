@@ -86,6 +86,115 @@ const webSearchTool: ToolDefinition = {
 
 // ---- Web Fetch ----
 
+/**
+ * SSRF guard for the web_fetch tool.
+ *
+ * Prevents the agent from reaching non-public targets (loopback, private and
+ * link-local networks, and metadata services) that LLM-generated URLs should
+ * never access. Fetching runs on the user's machine, so without this the agent
+ * could probe internal services (e.g. 169.254.169.254 cloud metadata, router
+ * admin panels, local ports) and exfiltrate the responses.
+ */
+
+/** True when an IP is loopback, private, link-local, or a known metadata range. */
+function isBlockedIpv4(ip: string): boolean {
+  const [a, b] = ip.split(".").map((octet) => Number(octet));
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    return false;
+  }
+  return (
+    a === 10 || // 10.0.0.0/8
+    a === 127 || // loopback
+    (a === 172 && b >= 16 && b <= 31) || // 172.16/12
+    (a === 192 && b === 168) || // 192.168/16
+    (a === 169 && b === 254) || // 169.254.0.0/16 link-local + cloud metadata
+    (a === 100 && b >= 64 && b <= 127) || // CGNAT 100.64/10
+    a === 0 // 0.0.0.0/8
+  );
+}
+
+function isBlockedIpv6(ip: string): boolean {
+  const lower = ip.toLowerCase();
+  return (
+    lower === "::1" || // loopback
+    lower.startsWith("fc") || lower.startsWith("fd") || // ULA fc00::/7
+    lower.startsWith("fe80") // link-local fe80::/10
+  );
+}
+
+/** True if the hostname itself is reserved or clearly internal. */
+function isBlockedHostname(hostname: string): boolean {
+  const lower = hostname.toLowerCase().replace(/\.$/, "");
+  return (
+    lower === "localhost" ||
+    lower === "metadata.google.internal" ||
+    lower === "metadata.goog" ||
+    lower.endsWith(".internal") ||
+    lower.endsWith(".local") ||
+    lower.endsWith(".localhost")
+  );
+}
+
+/** URLs we can safely fetch — https, no credentials, public target. */
+function isSafeFetchUrl(url: string): { ok: boolean; reason?: string } {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { ok: false, reason: "Invalid URL" };
+  }
+
+  if (parsed.protocol !== "https:") {
+    return { ok: false, reason: "Only https URLs are allowed (http/plaintext is blocked)" };
+  }
+  if (parsed.username || parsed.password) {
+    return { ok: false, reason: "URLs with embedded credentials are blocked" };
+  }
+
+  const hostname = parsed.hostname;
+  if (isBlockedHostname(hostname)) {
+    return { ok: false, reason: `Host "${hostname}" is reserved or internal` };
+  }
+
+  // Raw-IP URLs (https://1.2.3.4/...) can be checked directly.
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    if (isBlockedIpv4(hostname)) {
+      return { ok: false, reason: `IP ${hostname} is a private/reserved address` };
+    }
+    return { ok: true };
+  }
+  if (hostname.includes(":")) {
+    // Bare IPv6 literal in the host slot.
+    if (isBlockedIpv6(hostname)) {
+      return { ok: false, reason: `IP ${hostname} is a private/reserved address` };
+    }
+    return { ok: true };
+  }
+
+  return { ok: true };
+}
+
+/** Deterministically validate a URL (https-only, public hosts). */
+export function validateFetchUrl(url: string): { ok: boolean; reason?: string } {
+  return isSafeFetchUrl(url);
+}
+
+/** Validate a URL while permitting the caller to opt into loopback/private hosts. */
+export function validateFetchUrlInsecure(url: string): { ok: boolean; reason?: string } {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") {
+      return { ok: false, reason: "Only https URLs are allowed (http/plaintext is blocked)" };
+    }
+    if (parsed.username || parsed.password) {
+      return { ok: false, reason: "URLs with embedded credentials are blocked" };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "Invalid URL" };
+  }
+}
+
 const webFetchTool: ToolDefinition = {
   name: "web_fetch",
   description: "Fetch a URL and return its content as text. Supports HTML pages, JSON APIs, and plain text.",
@@ -94,17 +203,26 @@ const webFetchTool: ToolDefinition = {
   parameters: {
     type: "object",
     properties: {
-      url: { type: "string", description: "URL to fetch." },
+      url: { type: "string", description: "URL to fetch (https only, public hosts)." },
       max_length: { type: "number", description: "Max characters to return (default: 10000)." },
+      allow_private: { type: "boolean", description: "Allow loopback/private hosts (default: false)." },
     },
     required: ["url"],
   },
   async execute(params): Promise<{ output: string; error?: string }> {
     const url = String(params.url ?? "");
     const maxLength = Number(params.max_length) || 10000;
+    const allowPrivate = Boolean(params.allow_private);
 
     if (!url) {
       return { output: "", error: "URL is required." };
+    }
+
+    // allow_private:true is an explicit, dangerous opt-out for intentional
+// localhost-fetch scenarios; keep the protocol/credentials checks regardless.
+const validated = allowPrivate ? validateFetchUrlInsecure(url) : validateFetchUrl(url);
+    if (!validated.ok) {
+      return { output: "", error: `Blocked by SSRF guard: ${validated.reason}` };
     }
 
     try {
