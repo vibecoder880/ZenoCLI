@@ -37,15 +37,19 @@ describe("filterSlashCommands", () => {
     expect(SLASH_COMMANDS.some((entry) => entry.command === "/init")).toBe(true);
   });
 
-  it("floats recently used commands above less-recent ones", () => {
-    const before = filterSlashCommands("/");
-    const beforeIndex = before.findIndex((entry) => entry.command === "/chat");
+  it("floats a recently used command above peers in its category", () => {
+    // /permission is not first in the mode category; marking it recent should
+    // move it ahead of /chat and /agent.
+    const modeBefore = filterSlashCommands("/").filter((entry) => entry.category === "mode");
+    const permissionIdxBefore = modeBefore.findIndex((entry) => entry.command === "/permission");
 
-    markSlashCommandUsed("/chat");
-    const after = filterSlashCommands("/");
-    const afterIndex = after.findIndex((entry) => entry.command === "/chat");
+    markSlashCommandUsed("/permission");
+    const modeAfter = filterSlashCommands("/").filter((entry) => entry.category === "mode");
+    const permissionIdxAfter = modeAfter.findIndex((entry) => entry.command === "/permission");
+    const chatIdxAfter = modeAfter.findIndex((entry) => entry.command === "/chat");
 
-    expect(afterIndex).toBeLessThan(beforeIndex);
+    expect(permissionIdxBefore).toBeGreaterThan(0);
+    expect(permissionIdxAfter).toBeLessThan(chatIdxAfter);
   });
 });
 

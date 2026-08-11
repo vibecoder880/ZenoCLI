@@ -58,6 +58,8 @@ function recencyRank(command: string): number {
   return index === -1 ? recentCommands.length + 100 : index;
 }
 
+const CATEGORY_ORDER: SlashCommandCategory[] = ["mode", "session", "debug", "info"];
+
 export function filterSlashCommands(input: string): SlashCommand[] {
   if (!input.startsWith("/")) {
     return [];
@@ -69,10 +71,11 @@ export function filterSlashCommands(input: string): SlashCommand[] {
     ? SLASH_COMMANDS.filter(({ command }) => command.slice(1).includes(query))
     : SLASH_COMMANDS;
 
-  // Recency-first ordering within the same category (stable for the rest).
-  return matches.sort((a, b) => {
-    if (a.category !== b.category) {
-      return 0;
+  // Copy before sorting so SLASH_COMMANDS is never mutated.
+  return [...matches].sort((a, b) => {
+    const categoryDelta = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
+    if (categoryDelta !== 0) {
+      return categoryDelta;
     }
     return recencyRank(a.command) - recencyRank(b.command);
   });
