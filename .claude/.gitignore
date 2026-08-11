@@ -12,6 +12,9 @@ node_modules
 
 # testing
 coverage
+# ClaudeKit's own hook/skill test suites stay local — they are not this repo's suite.
+.claude/hooks/**/__tests__/
+.claude/hooks/.logs/
 
 # next.js
 .next
