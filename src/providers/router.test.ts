@@ -19,11 +19,12 @@ describe("resolveModelRoute", () => {
     });
   });
 
-  it("maps auto to the smart alias", () => {
+  it("routes auto through the SmartRouter (balanced default)", () => {
+    // With DEFAULT_CONFIG (balanced strategy), auto picks the best-value model.
     expect(resolveModelRoute(DEFAULT_CONFIG, "auto")).toEqual({
-      model: "claude-sonnet-4-0",
-      provider: "anthropic",
-      source: "explicit"
+      model: "gpt-4o-mini",
+      provider: "openai",
+      source: "auto"
     });
   });
 });

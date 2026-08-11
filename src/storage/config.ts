@@ -29,6 +29,11 @@ export interface ZenoConfig {
     /** Env var holding the API key. */
     envKey?: string;
   }>;
+  /** Model routing strategy for `model: auto`. */
+  routing?: {
+    /** cost | quality | speed | balanced (default: balanced). */
+    strategy?: "cost" | "quality" | "speed" | "balanced";
+  };
   mcp?: {
     servers: Record<string, {
       command: string;
@@ -71,7 +76,10 @@ export const DEFAULT_CONFIG: ZenoConfig = {
     PreToolUse: [],
     PostToolUse: []
   },
-  providers: {}
+  providers: {},
+  routing: {
+    strategy: "balanced"
+  }
 };
 
 function getConfigPath(): string {
@@ -123,6 +131,10 @@ function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
     providers: {
       ...(DEFAULT_CONFIG.providers ?? {}),
       ...(partial?.providers ?? {})
+    },
+    routing: {
+      ...(DEFAULT_CONFIG.routing ?? {}),
+      ...(partial?.routing ?? {})
     }
   };
 }

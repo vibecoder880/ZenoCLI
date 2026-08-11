@@ -1,9 +1,11 @@
 import { DEFAULT_CONFIG, type ZenoConfig } from "../storage/config.js";
+import { ModelRegistry } from "./model-registry.js";
+import { SmartRouter } from "./smart-router.js";
 
 export interface ProviderRoute {
   provider: string;
   model: string;
-  source: "explicit" | "alias" | "default";
+  source: "explicit" | "alias" | "default" | "auto";
 }
 
 function inferProviderFromModel(model: string): string {
@@ -35,8 +37,19 @@ export function resolveModelRoute(
 ): ProviderRoute {
   if (model) {
     if (model === "auto") {
-      const aliasTarget = config.aliases.smart ?? config.default.model;
-      return resolveModelRoute(config, aliasTarget, provider);
+      // Route through the Super Kit-inspired SmartRouter, preferring the
+      // configured strategy (config.routing?.strategy) or balanced by default.
+      const strategy = config.routing?.strategy ?? "balanced";
+      const decision = new SmartRouter(new ModelRegistry()).route(strategy);
+      const [routeProvider, routeModel] = decision.selected.id.includes("/")
+        ? decision.selected.id.split("/", 2)
+        : [decision.selected.provider, decision.selected.id];
+
+      return {
+        provider: provider ?? routeProvider,
+        model: routeModel,
+        source: "auto",
+      };
     }
 
     const aliasTarget = config.aliases[model];
