@@ -20,6 +20,15 @@ export interface ZenoConfig {
     /** Per-tool auto-approve rules. */
     autoApprove?: Record<string, boolean>;
   };
+  /** Optional additional providers beyond the built-in set (config-driven registry). */
+  providers?: Record<string, {
+    /** Display name. */
+    name: string;
+    /** Auth methods the provider supports. */
+    authMethods?: Array<"oauth" | "api_key" | "local">;
+    /** Env var holding the API key. */
+    envKey?: string;
+  }>;
   mcp?: {
     servers: Record<string, {
       command: string;
@@ -61,7 +70,8 @@ export const DEFAULT_CONFIG: ZenoConfig = {
   hooks: {
     PreToolUse: [],
     PostToolUse: []
-  }
+  },
+  providers: {}
 };
 
 function getConfigPath(): string {
@@ -109,6 +119,10 @@ function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
         ...(DEFAULT_CONFIG.hooks?.PostToolUse ?? []),
         ...(partial?.hooks?.PostToolUse ?? [])
       ]
+    },
+    providers: {
+      ...(DEFAULT_CONFIG.providers ?? {}),
+      ...(partial?.providers ?? {})
     }
   };
 }

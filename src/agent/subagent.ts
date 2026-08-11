@@ -35,6 +35,12 @@ export interface SubagentOptions {
   projectInstructions?: string;
   /** Memory content. */
   memoryContent?: string;
+  /** Abort signal to cancel the subagent loop. */
+  signal?: AbortSignal;
+  /** Max retries for retryable provider errors (default: 0). */
+  maxRetries?: number;
+  /** Base retry delay in ms; doubles with backoff each retry (default: 1000). */
+  retryBaseDelayMs?: number;
 }
 
 export interface SubagentResult {
@@ -154,7 +160,11 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
 
   try {
     const result = await Promise.race<Promise<SubagentLoopResult> | Promise<never>>([
-      executeSubagentLoop(provider, modelId, ctx, tools, toolContext, maxTurns),
+      executeSubagentLoop(provider, modelId, ctx, tools, toolContext, maxTurns, {
+          signal: options.signal,
+          maxRetries: options.maxRetries,
+          retryBaseDelayMs: options.retryBaseDelayMs,
+        }),
       timeoutAfter<SubagentLoopResult>(timeout, "Subagent timeout"),
     ]);
 
@@ -193,18 +203,28 @@ async function executeSubagentLoop(
   allowedTools: string[],
   toolContext: ToolExecutionContext,
   maxTurns: number,
+  opts: { signal?: AbortSignal; maxRetries?: number; retryBaseDelayMs?: number } = {},
 ): Promise<SubagentLoopResult> {
   let totalTokens = 0;
   const toolsUsed: string[] = [];
   const toolDefs = getToolDefinitionsForApi().filter((t) => allowedTools.includes(t.name));
+  const maxRetries = opts.maxRetries ?? 0;
+  const retryBaseDelayMs = opts.retryBaseDelayMs ?? 1000;
 
   for (let turn = 0; turn < maxTurns; turn++) {
+    if (opts.signal?.aborted) {
+      return { message: "Cancelled by user (abort signal).", totalTokens, success: false, error: "aborted", turns: turn, toolsUsed };
+    }
+
     if (ctx.needsCompaction()) {
       ctx.compact();
     }
 
     const messages = ctx.toMessages();
-    const result = await collectProviderText(provider, model, messages, undefined, toolDefs);
+    const result = await callWithRetry(
+      () => collectProviderText(provider, model, messages, undefined, toolDefs, opts.signal),
+      { signal: opts.signal, maxRetries, baseDelayMs: retryBaseDelayMs }
+    );
 
     totalTokens += result.totalTokens;
 
@@ -212,6 +232,18 @@ async function executeSubagentLoop(
       ctx.addAssistant(result.text || `[Used ${result.toolCalls.length} tool(s)]`);
 
       for (const toolCall of result.toolCalls) {
+        // Stop mid-batch if aborted after a tool call executed.
+        if (opts.signal?.aborted) {
+          return {
+            message: "Cancelled by user (abort signal).",
+            totalTokens,
+            success: false,
+            error: "aborted",
+            turns: turn + 1,
+            toolsUsed,
+          };
+        }
+
         // Verify tool is allowed
         if (!allowedTools.includes(toolCall.name)) {
           ctx.addToolResult(toolCall.name, `Tool "${toolCall.name}" is not available in this subagent.`);
@@ -222,7 +254,10 @@ async function executeSubagentLoop(
           toolsUsed.push(toolCall.name);
         }
 
-        const toolResult = await executeTool(toolCall.name, toolCall.arguments, toolContext);
+        const toolResult = await executeTool(toolCall.name, toolCall.arguments, {
+          ...toolContext,
+          signal: opts.signal,
+        });
         const output = toolResult.error ? `Error: ${toolResult.error}` : toolResult.output;
         ctx.addToolResult(toolCall.name, output);
       }
@@ -330,4 +365,53 @@ export function getSubagentStats(): { active: number; total: number; maxConcurre
     maxConcurrent: MAX_CONCURRENT,
     maxTotal: MAX_TOTAL,
   };
+}
+
+// ---- Abort + retry helpers ----
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Is this provider error worth a bounded retry? */
+function isRetryableError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  if (err.name === "AbortError") {
+    return false;
+  }
+  const message = err.message.toLowerCase();
+  return (
+    /rate limit|429|too many|overloaded|500|502|503|504|interrupted|timeout|temporarily/.test(
+      message
+    ) ||
+    err.name === "TimeoutError"
+  );
+}
+
+/**
+ * Run fn with bounded exponential backoff on retryable errors.
+ * Non-retryable errors and aborts propagate immediately.
+ */
+async function callWithRetry<T>(
+  fn: () => Promise<T>,
+  opts: { signal?: AbortSignal; maxRetries: number; baseDelayMs: number }
+): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt >= opts.maxRetries || !isRetryableError(err)) {
+        throw err;
+      }
+      const delayMs = opts.baseDelayMs * 2 ** attempt;
+      attempt += 1;
+      await sleepMs(delayMs);
+      if (opts.signal?.aborted) {
+        throw new Error("Cancelled by user (abort signal).");
+      }
+    }
+  }
 }

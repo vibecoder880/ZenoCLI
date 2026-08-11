@@ -3,7 +3,8 @@ import { AnthropicProvider } from "./anthropic.js";
 import { GoogleProvider } from "./google.js";
 import { OpenAiProvider } from "./openai.js";
 import { AuthProfileStore } from "../auth/auth-profiles.js";
-import { PROVIDER_CATALOG } from "./catalog.js";
+import { PROVIDER_CATALOG, type ProviderCatalogEntry } from "./catalog.js";
+import { loadConfig } from "../storage/config.js";
 
 export function createProvider(slug: string, store = new AuthProfileStore()): AiProvider {
   switch (slug.toLowerCase()) {
@@ -32,6 +33,22 @@ export function tryCreateProvider(
   }
 }
 
-export function listProviderCatalog() {
-  return PROVIDER_CATALOG;
+/**
+ * The provider catalog surfaced to `zeno models` / `zeno health`: the built-in
+ * providers plus any additional providers declared in config's [providers] section.
+ * Config-declared providers report their auth via the env key holder (api_key)
+ * unless overridden.
+ */
+export function listProviderCatalog(): ProviderCatalogEntry[] {
+  const config = loadConfig();
+  const extra: ProviderCatalogEntry[] = Object.entries(config.providers ?? {}).map(
+    ([slug, def]) => ({
+      slug,
+      name: def.name ?? slug,
+      authMethods: def.authMethods ?? (def.envKey ? ["api_key"] : ["api_key"]),
+    })
+  );
+
+  const builtin = new Set(PROVIDER_CATALOG.map((entry) => entry.slug));
+  return [...PROVIDER_CATALOG, ...extra.filter((entry) => !builtin.has(entry.slug))];
 }

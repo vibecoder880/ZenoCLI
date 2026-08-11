@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { hasAnyActiveProfile, listMissingProviders } from "../../auth/auth-profiles.js";
+import { getKnownProviders, hasAnyActiveProfile, listMissingProviders } from "../../auth/auth-profiles.js";
 import type { ZenoConfig } from "../../storage/config.js";
 
 export interface FirstRunState {
@@ -9,8 +9,8 @@ export interface FirstRunState {
 }
 
 export function detectFirstRun(config: ZenoConfig): FirstRunState {
-  const missing = listMissingProviders();
-  const hasAny = hasAnyActiveProfile();
+  const missing = listMissingProviders(getKnownProviders(config));
+  const hasAny = hasAnyActiveProfile(getKnownProviders(config));
   const isFirstRun = !hasAny || Object.keys(config.aliases ?? {}).length === 0;
 
   return {

@@ -270,12 +270,23 @@ export function isOAuthNearExpiry(profile: StoredAuthProfile, bufferMs = 3 * 24 
   );
 }
 
-export const KNOWN_PROVIDERS = ["openai", "anthropic", "google"] as const;
-export type KnownProvider = (typeof KNOWN_PROVIDERS)[number];
+/** Built-in providers with real adapters. */
+export const BUILTIN_PROVIDERS = ["openai", "anthropic", "google"] as const;
+export type KnownProvider = (typeof BUILTIN_PROVIDERS)[number];
 
-export function hasAnyActiveProfile(providers: readonly string[] = KNOWN_PROVIDERS): boolean {
+/**
+ * The set of providers to surface for status/auth checks: the built-ins plus
+ * any additional providers declared in the config's [providers] section.
+ */
+export function getKnownProviders(config?: { providers?: Record<string, unknown> }): string[] {
+  const extra = Object.keys(config?.providers ?? {}).filter((slug) => !BUILTIN_PROVIDERS.includes(slug as KnownProvider));
+  return [...BUILTIN_PROVIDERS, ...extra];
+}
+
+export function hasAnyActiveProfile(providers?: readonly string[]): boolean {
+  const checked = providers ?? getKnownProviders();
   const store = new AuthProfileStore();
-  for (const provider of providers) {
+  for (const provider of checked) {
     const profile = store.getActiveProfile(provider);
     if (profile && !isProfileExpired(profile)) {
       return true;
@@ -284,9 +295,10 @@ export function hasAnyActiveProfile(providers: readonly string[] = KNOWN_PROVIDE
   return false;
 }
 
-export function listMissingProviders(providers: readonly string[] = KNOWN_PROVIDERS): string[] {
+export function listMissingProviders(providers?: readonly string[]): string[] {
+  const checked = providers ?? getKnownProviders();
   const store = new AuthProfileStore();
-  return providers.filter((provider) => {
+  return checked.filter((provider) => {
     const profile = store.getActiveProfile(provider);
     return !profile || isProfileExpired(profile);
   });

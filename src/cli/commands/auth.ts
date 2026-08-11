@@ -1,7 +1,7 @@
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
-import { AuthProfileStore, isProfileExpired, maskSecret } from "../../auth/auth-profiles.js";
+import { AuthProfileStore, getKnownProviders, isProfileExpired, maskSecret } from "../../auth/auth-profiles.js";
 import { waitForOAuthCode } from "../../auth/oauth-server.js";
 import {
   buildAuthorizationUrl,
@@ -164,7 +164,7 @@ function registerStatusCommand(command: Command): void {
     .description("Show provider credential status")
     .action(() => {
       const store = new AuthProfileStore();
-      const providers = ["openai", "anthropic", "google"];
+      const providers = getKnownProviders();
 
       for (const provider of providers) {
         const active = store.getActiveProfile(provider);
@@ -226,7 +226,7 @@ function registerRefreshCommand(command: Command): void {
 /** Validate stored credentials and print a per-provider status. Sets exit 1 when any check fails. */
 export function runAuthHealth(providerFilter?: string): void {
   const store = new AuthProfileStore();
-  const providers = providerFilter ? [providerFilter] : ["openai", "anthropic", "google"];
+  const providers = providerFilter ? [providerFilter] : getKnownProviders();
   let healthy = true;
 
   for (const provider of providers) {
