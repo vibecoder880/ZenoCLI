@@ -18,6 +18,7 @@ import {
   runHistoryShowCommand
 } from "./cli/commands/history.js";
 import { runInitCommand } from "./cli/commands/init.js";
+import { runReviewCommand } from "./cli/commands/review.js";
 import { runHealthCommand, runModelsCommand } from "./cli/commands/providers.js";
 import { runVersionCommand } from "./cli/commands/version.js";
 import { loadConfig } from "./storage/config.js";
@@ -179,6 +180,23 @@ program
   .argument("[targetCwd]", "Optional working directory")
   .action(async (targetCwd?: string) => {
     await runDoctorCommand(targetCwd ?? process.cwd());
+  });
+
+program
+  .command("review")
+  .description("Run the code-review agent over a target or git diff")
+  .argument("[target]", "File or directory to review")
+  .option("--diff <ref>", "Review changed files vs a git ref (e.g. HEAD~1)")
+  .option("--cwd <cwd>", "Working directory", process.cwd())
+  .option("--non-interactive", "Headless output; exit 1 when findings exist")
+  .option("--pipe", "Alias for --non-interactive")
+  .action(async (target: string | undefined, options: { diff?: string; cwd: string; nonInteractive?: boolean; pipe?: boolean }) => {
+    await runReviewCommand({
+      target,
+      diff: options.diff,
+      cwd: options.cwd,
+      nonInteractive: Boolean(options.nonInteractive || options.pipe)
+    });
   });
 
 program
