@@ -1,6 +1,6 @@
 {
   "name": "zeno-cli",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "A professional multi-provider terminal coding agent.",
   "license": "MIT",
   "type": "module",

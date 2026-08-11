@@ -258,6 +258,27 @@ Low-stakes tasks (subagent summaries, reviews) use an economy-tier
 metadataModel = "openai/gpt-4o-mini"
 ```
 
+### OpenAI-compatible providers
+
+Any endpoint speaking the OpenAI wire format can be added to `config.toml` —
+OpenRouter, xAI, Azure, Groq, local Ollama, and hundreds more — without code:
+
+```toml
+[providers.openrouter]
+type = "openai-compatible"
+name = "OpenRouter"
+baseURL = "https://openrouter.ai/api/v1"
+apiKeyEnv = "OPENROUTER_API_KEY"
+
+[providers.ollama]
+type = "openai-compatible"
+name = "Ollama (local)"
+baseURL = "http://localhost:11434/v1"   # no apiKey needed for local servers
+```
+
+Then use it with `zeno chat "..." --provider openrouter --model <model-id>`.
+The API key is read from `apiKeyEnv`; local servers can omit it.
+
 ### Budget tracking
 
 Optional daily/monthly spend limits with automatic downgrade to the cost

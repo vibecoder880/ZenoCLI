@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.5 - 2026-08-12
+
+### Features
+- OpenAI-compatible provider: any endpoint speaking the OpenAI wire format works from `config.toml` (OpenRouter, xAI, Azure, Groq, local Ollama, ...) — 75+ providers without code
+- TUI command palette: slash commands are category-ordered with recency-first ordering and full keyboard navigation (↑/↓/Tab/Enter/Esc)
+- TUI manage-models dialog: `/models` opens a tier-grouped model picker (premium/standard/economy) with quality/cost hints; Enter updates the active model
+- Session fork UX: `/fork` opens a message-index picker; forking carries entries up to the selected message (`forkSession` `upToIndex`)
+
+### Docs
+- README + architecture document openai-compatible providers, palette, models dialog, and fork
+
 ## 0.7.4 - 2026-08-12
 
 ### Features

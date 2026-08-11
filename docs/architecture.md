@@ -109,12 +109,13 @@ Agent Loop (orchestrator)
 - **tui.tsx** — Ink/React TUI với welcome banner, sticky header/footer, multi-line input
 - **slash-commands.ts** — Slash command definitions với category grouping
 - **commands/** — Individual CLI commands: chat/agent support `--non-interactive`/`--pipe` headless output; `review` runs the reviewer subagent over a target or git diff
-- **components/** — Header, MessageList, AgentStatus, Prompt, SlashMenu, Footer, WelcomeBanner; `DiffView` colors unified diffs (+green/-red) in message bubbles
+- **components/** — Header, MessageList, AgentStatus, Prompt, SlashMenu, Footer, WelcomeBanner; `DiffView` colors unified diffs (+green/-red) in message bubbles; `ModelsDialog` tier-grouped model picker; `ForkDialog` message-index session fork
 - **hooks/** — useMultiLineInput, useFirstRun
 
 ### Providers (`src/providers/`)
 - **base.ts** — `AiProvider` contract (`chat()` streaming, `listModels()`, `healthCheck()`). `ChatRequest` accepts an optional `signal?: AbortSignal` so an in-flight streaming request can be cancelled.
 - **openai.ts** / **anthropic.ts** / **google.ts** — Provider adapters. Each passes `request.signal` into its SDK call (OpenAI `create(…, { signal })`, Anthropic `stream(…, { signal })`, Google `fetch(…, { signal })`)
+- **openai-compatible.ts** — Generic OpenAI-wire-format adapter driven by `config.providers` (`type="openai-compatible"`, `baseURL`), unlocking 75+ providers
 - **router.ts** — Model route resolution (explicit `provider/model`, alias, or prefix inference; `auto` routes through the SmartRouter)
 - **smart-router.ts** — Super Kit-inspired `SmartRouter` selecting a model by `cost`/`quality`/`speed`/`balanced` strategy (drives `--model auto`)
 - **model-registry.ts** — `ModelRegistry` with tier, quality score, latency, and pricing per model
