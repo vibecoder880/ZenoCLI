@@ -14,6 +14,29 @@ interface OAuthProviderConfig {
   extraAuthParams?: Record<string, string>;
   userInfoUrl?: string;
   userEmailField?: string;
+  /** Device authorization endpoint (RFC 8628), if the provider supports it. */
+  deviceUrl?: string;
+}
+
+/** Config for the device code flow, derived from the provider OAuth config. */
+export function getDeviceOAuthConfig(provider: string): {
+  deviceUrl: string;
+  tokenUrl: string;
+  clientId: string;
+  clientSecret?: string;
+  scope?: string;
+} {
+  const config = getOAuthConfig(provider);
+  if (!config.deviceUrl) {
+    throw new Error(`Device code flow is not supported for provider "${provider}".`);
+  }
+  return {
+    deviceUrl: config.deviceUrl,
+    tokenUrl: config.tokenUrl,
+    clientId: config.clientId,
+    clientSecret: config.clientSecret,
+    scope: config.scopes.join(" "),
+  };
 }
 
 interface OAuthTokenResponse {
@@ -38,6 +61,7 @@ function getGoogleOAuthConfig(): OAuthProviderConfig {
     provider: "google",
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
     tokenUrl: "https://oauth2.googleapis.com/token",
+    deviceUrl: "https://oauth2.googleapis.com/device/code",
     clientId: getRequiredEnv("GOOGLE_OAUTH_CLIENT_ID"),
     clientSecret: getRequiredEnv("GOOGLE_OAUTH_CLIENT_SECRET"),
     redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:9876/callback",
@@ -56,6 +80,7 @@ function getOpenAiOAuthConfig(): OAuthProviderConfig {
     provider: "openai",
     authUrl: getRequiredEnv("OPENAI_OAUTH_AUTH_URL"),
     tokenUrl: getRequiredEnv("OPENAI_OAUTH_TOKEN_URL"),
+    deviceUrl: process.env.OPENAI_OAUTH_DEVICE_URL,
     clientId: getRequiredEnv("OPENAI_OAUTH_CLIENT_ID"),
     clientSecret: process.env.OPENAI_OAUTH_CLIENT_SECRET,
     redirectUri: process.env.OPENAI_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:9876/callback",

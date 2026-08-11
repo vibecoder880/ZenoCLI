@@ -3,6 +3,7 @@ import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
 import { AuthProfileStore, getKnownProviders, isProfileExpired, maskSecret } from "../../auth/auth-profiles.js";
 import { waitForOAuthCode } from "../../auth/oauth-server.js";
+import { pollForDeviceToken, startDeviceAuthorization } from "../../auth/device-code.js";
 import {
   buildAuthorizationUrl,
   createOAuthState,
@@ -10,6 +11,7 @@ import {
   createPKCEVerifier,
   exchangeAuthorizationCode,
   fetchOAuthEmail,
+  getDeviceOAuthConfig,
   getOAuthConfig,
   openAuthorizationUrl,
   promptForAuthorizationCode,
@@ -25,12 +27,18 @@ function registerLoginCommand(command: Command): void {
     .option("--label <label>", "Friendly profile label")
     .option("--key <key>", "API key to store")
     .option("--manual-code", "Paste authorization code instead of waiting for localhost callback")
+    .option("--device", "Use Device Code Flow (for WSL/SSH/Docker/CI)")
     .action(
       async (
         provider: string,
-        options: { method: string; label?: string; key?: string; manualCode?: boolean }
+        options: { method: string; label?: string; key?: string; manualCode?: boolean; device?: boolean }
       ) => {
       const store = new AuthProfileStore();
+
+      if (options.method === "oauth" && options.device) {
+        await runDeviceLogin(provider, store);
+        return;
+      }
 
       if (options.method === "oauth") {
         const config = getOAuthConfig(provider);
@@ -97,6 +105,33 @@ function registerLoginCommand(command: Command): void {
 
       console.log(`Saved profile ${profile.id}`);
     });
+}
+
+/** OAuth via Device Code Flow — for WSL/SSH/Docker/CI where localhost is unreachable. */
+async function runDeviceLogin(provider: string, store: AuthProfileStore): Promise<void> {
+  const deviceConfig = getDeviceOAuthConfig(provider);
+  console.log(`Starting device-code OAuth login for ${provider}`);
+
+  const auth = await startDeviceAuthorization(deviceConfig);
+  console.log(`\nVisit: ${auth.verificationUri}`);
+  console.log(`Enter code: ${auth.userCode}\n`);
+  console.log("Waiting for authorization...");
+
+  const token = await pollForDeviceToken(
+    deviceConfig,
+    auth.deviceCode,
+    auth.expiresIn,
+    auth.interval
+  );
+
+  const profile = store.saveProfile({
+    type: "oauth",
+    provider,
+    access: token.access_token,
+    refresh: token.refresh_token ?? "",
+    expires: Date.now() + (token.expires_in ?? 3600) * 1000
+  });
+  console.log(`Saved OAuth profile ${profile.id}`);
 }
 
 function registerListCommand(command: Command): void {
