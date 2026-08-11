@@ -77,7 +77,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   const [screen, setScreen] = useState<ScreenMode>("welcome");
   const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>(config.permission?.mode ?? "default");
-  const slashCommands = useMemo(() => filterSlashCommands(input), [input]);
+  const slashCommands = useMemo(() => filterSlashCommands(input, config), [input, config]);
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
 
   // Context manager and session (persisted across turns)
@@ -158,6 +158,20 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
   const executeSlashCommand = useCallback(async (value: string): Promise<boolean> => {
     const command = findSlashCommand(value);
+
+    // Custom slash command from config ([commands]): send the prompt template.
+    if (!command && value.startsWith("/")) {
+      const name = value.slice(1).trim().split(/\s+/)[0];
+      const custom = config.commands?.[name];
+      if (custom) {
+        setInput("");
+        const extraArgs = value.slice(1).trim().split(/\s+/).slice(1).join(" ");
+        const prompt = custom.prompt + (extraArgs ? `\n${extraArgs}` : "");
+        setAgentLines([`Running custom command /${name}`]);
+        await submitPrompt(prompt);
+        return true;
+      }
+    }
 
     if (!command) {
       return false;

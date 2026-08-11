@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildSlashCommands,
   filterSlashCommands,
   findSlashCommand,
   getSlashCommandsByCategory,
@@ -48,7 +49,23 @@ describe("filterSlashCommands", () => {
     expect(SLASH_COMMANDS.some((entry) => entry.command === "/init")).toBe(true);
   });
 
-  it("floats a recently used command above peers in its category", () => {
+  it("includes custom commands from config in the palette", () => {
+  const config = {
+    commands: {
+      refactor: { prompt: "Refactor the current file for clarity." },
+      summarize: { prompt: "Summarize the conversation.", model: "gpt-4o-mini" },
+    },
+  };
+
+  const all = buildSlashCommands(config);
+  expect(all.some((entry) => entry.command === "/refactor")).toBe(true);
+  expect(all.some((entry) => entry.command === "/summarize")).toBe(true);
+
+  const filtered = filterSlashCommands("/ref", config);
+  expect(filtered.map((entry) => entry.command)).toContain("/refactor");
+});
+
+it("floats a recently used command above peers in its category", () => {
     // /permission is not first in the mode category; marking it recent should
     // move it ahead of /chat and /agent.
     const modeBefore = filterSlashCommands("/").filter((entry) => entry.category === "mode");

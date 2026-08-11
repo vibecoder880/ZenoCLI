@@ -60,18 +60,32 @@ function recencyRank(command: string): number {
 
 const CATEGORY_ORDER: SlashCommandCategory[] = ["mode", "session", "debug", "info"];
 
-export function filterSlashCommands(input: string): SlashCommand[] {
+/**
+ * Build the full command list: built-ins plus any custom commands declared in
+ * config (`[commands]`, e.g. `/refactor` -> prompt template).
+ */
+export function buildSlashCommands(config?: { commands?: Record<string, { prompt: string; model?: string }> }): SlashCommand[] {
+  const custom: SlashCommand[] = Object.entries(config?.commands ?? {}).map(([name, def]) => ({
+    command: `/${name}`,
+    description: def.prompt.replace(/\s+/g, " ").slice(0, 60),
+    category: "info",
+  }));
+  return [...SLASH_COMMANDS, ...custom];
+}
+
+export function filterSlashCommands(input: string, config?: { commands?: Record<string, { prompt: string; model?: string }> }): SlashCommand[] {
   if (!input.startsWith("/")) {
     return [];
   }
 
   const query = input.slice(1).trim().toLowerCase();
+  const all = buildSlashCommands(config);
 
   const matches = query
-    ? SLASH_COMMANDS.filter(({ command }) => command.slice(1).includes(query))
-    : SLASH_COMMANDS;
+    ? all.filter(({ command }) => command.slice(1).includes(query))
+    : all;
 
-  // Copy before sorting so SLASH_COMMANDS is never mutated.
+  // Copy before sorting so the underlying list is never mutated.
   return [...matches].sort((a, b) => {
     const categoryDelta = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
     if (categoryDelta !== 0) {

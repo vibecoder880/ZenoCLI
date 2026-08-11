@@ -40,6 +40,13 @@ export interface ZenoConfig {
     /** cost | quality | speed | balanced (default: balanced). */
     strategy?: "cost" | "quality" | "speed" | "balanced";
   };
+  /** Custom slash commands: "/name" -> prompt template to send. */
+  commands?: Record<string, {
+    /** Prompt template sent to the model when the command runs. */
+    prompt: string;
+    /** Optional model override for this command. */
+    model?: string;
+  }>;
   /** Economy-tier model used for low-stakes subagent/summary tasks. */
   metadataModel?: string;
   /** Spend budget with optional limits and auto-downgrade. */
@@ -100,6 +107,7 @@ export const DEFAULT_CONFIG: ZenoConfig = {
     strategy: "balanced"
   },
   metadataModel: "openai/gpt-4o-mini",
+  commands: {},
   budget: {
     dailyLimitUsd: 0,
     monthlyLimitUsd: 0,
@@ -163,6 +171,10 @@ function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
       ...(partial?.routing ?? {})
     },
     metadataModel: partial?.metadataModel ?? DEFAULT_CONFIG.metadataModel,
+    commands: {
+      ...(DEFAULT_CONFIG.commands ?? {}),
+      ...(partial?.commands ?? {})
+    },
     budget: {
       ...(DEFAULT_CONFIG.budget ?? {}),
       ...(partial?.budget ?? {})
