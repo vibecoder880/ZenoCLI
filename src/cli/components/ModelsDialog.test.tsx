@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { setActiveModel } from "./ModelsDialog.js";
 
 vi.mock("../../storage/config.js", () => ({
