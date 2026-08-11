@@ -65,6 +65,11 @@ export function ModelsDialog({ onClose, onSelect }: ModelsDialogProps): React.JS
 export function setActiveModel(modelId: string): ZenoConfig {
   return updateConfig((config) => ({
     ...config,
-    default: { ...config.default, model: modelId, provider: modelId.split("/")[0] ?? config.default.provider },
+    default: {
+      ...config.default,
+      model: modelId,
+      // Infer the provider from "provider/model", else keep the current one.
+      provider: modelId.includes("/") ? modelId.split("/")[0] : config.default.provider,
+    },
   }));
 }

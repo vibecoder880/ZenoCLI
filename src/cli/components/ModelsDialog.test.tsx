@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { setActiveModel } from "./ModelsDialog.js";
 
 vi.mock("../../storage/config.js", () => ({
@@ -21,7 +21,6 @@ describe("setActiveModel", () => {
   });
 
   it("keeps the provider for a bare model id", () => {
-    vi.stubEnv("SKIP", "");
     const next = setActiveModel("some-local-model");
     expect(next.default.model).toBe("some-local-model");
     expect(next.default.provider).toBe("openai");
