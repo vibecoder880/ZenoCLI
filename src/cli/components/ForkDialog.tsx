@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { forkSession, type SessionEntry } from "../../core/session.js";
+import { forkSession, type SessionEntry, type SessionWriter } from "../../core/session.js";
 
 interface ForkDialogProps {
   sessionId: string;
   cwd: string;
   entries: SessionEntry[];
   onClose: () => void;
-  onFork: (writer: { id: string }) => void;
+  onFork: (writer: SessionWriter) => void;
 }
 
 /** Preview text for a session entry. */

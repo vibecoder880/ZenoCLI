@@ -5,10 +5,9 @@ vi.mock("../../core/session.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../core/session.js")>();
   return {
     ...actual,
-    forkSession: vi.fn((sessionId: string, cwd: string, upToIndex?: number) => ({
-      id: `forked-${sessionId}-${upToIndex ?? "full"}`,
-      cwd,
-    })),
+    forkSession: vi.fn((sessionId: string, _cwd: string, upToIndex?: number) =>
+      ({ id: `forked-${sessionId}-${upToIndex ?? "full"}` }) as unknown as import("../../core/session.js").SessionWriter
+    ),
   };
 });
 
