@@ -15,6 +15,7 @@ import type { ChatMessage } from "../providers/base.js";
 import { estimateCostUsd } from "../providers/pricing.js";
 import { selectUsableRoute } from "../providers/router-fallback.js";
 import { filterSlashCommands, findSlashCommand, markSlashCommandUsed, SLASH_COMMANDS } from "./slash-commands.js";
+import { ModelsDialog, setActiveModel } from "./components/ModelsDialog.js";
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
 import { getConfigPathname, loadConfig } from "../storage/config.js";
@@ -69,6 +70,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   const [sessionCost, setSessionCost] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
   const [mode, setMode] = useState<AppMode>("chat");
+  const [modelsOpen, setModelsOpen] = useState(false);
   const [screen, setScreen] = useState<ScreenMode>("welcome");
   const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>(config.permission?.mode ?? "default");
@@ -269,20 +271,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     }
 
     if (command.command === "/models") {
-      const lines = Object.entries(config.aliases).map(([alias, target]) => `alias ${alias} -> ${target}`);
-      for (const entry of listProviderCatalog()) {
-        const created = tryCreateProvider(entry.slug);
-        if (!created.ok) {
-          lines.push(`${entry.slug}: unavailable`);
-          continue;
-        }
-
-        const models = await created.provider.listModels();
-        for (const modelInfo of models) {
-          lines.push(`${entry.slug}: ${modelInfo.id}`);
-        }
-      }
-      setAgentLines(lines);
+      setModelsOpen(true);
       setInput("");
       return true;
     }
@@ -719,7 +708,17 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       ) : null}
       <AgentStatus lines={agentLines} />
       <MessageList messages={messages} />
-      {input.startsWith("/") ? (
+      {modelsOpen ? (
+        <ModelsDialog
+          onClose={() => setModelsOpen(false)}
+          onSelect={(model) => {
+            setActiveModel(model);
+            setModelsOpen(false);
+            setAgentLines([`Model set to ${model}`]);
+          }}
+        />
+      ) : null}
+      {!modelsOpen && input.startsWith("/") ? (
         <SlashMenu commands={slashCommands} selectedIndex={selectedSlashIndex} />
       ) : null}
       <Prompt
