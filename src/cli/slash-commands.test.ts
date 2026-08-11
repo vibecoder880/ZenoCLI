@@ -3,6 +3,7 @@ import {
   filterSlashCommands,
   findSlashCommand,
   getSlashCommandsByCategory,
+  markSlashCommandUsed,
   SLASH_CATEGORY_LABELS,
   SLASH_COMMANDS
 } from "./slash-commands.js";
@@ -34,6 +35,17 @@ describe("filterSlashCommands", () => {
 
   it("includes init in the slash command list", () => {
     expect(SLASH_COMMANDS.some((entry) => entry.command === "/init")).toBe(true);
+  });
+
+  it("floats recently used commands above less-recent ones", () => {
+    const before = filterSlashCommands("/");
+    const beforeIndex = before.findIndex((entry) => entry.command === "/chat");
+
+    markSlashCommandUsed("/chat");
+    const after = filterSlashCommands("/");
+    const afterIndex = after.findIndex((entry) => entry.command === "/chat");
+
+    expect(afterIndex).toBeLessThan(beforeIndex);
   });
 });
 

@@ -14,7 +14,7 @@ import { createProvider } from "../providers/index.js";
 import type { ChatMessage } from "../providers/base.js";
 import { estimateCostUsd } from "../providers/pricing.js";
 import { selectUsableRoute } from "../providers/router-fallback.js";
-import { filterSlashCommands, findSlashCommand, SLASH_COMMANDS } from "./slash-commands.js";
+import { filterSlashCommands, findSlashCommand, markSlashCommandUsed, SLASH_COMMANDS } from "./slash-commands.js";
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
 import { getConfigPathname, loadConfig } from "../storage/config.js";
@@ -492,6 +492,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     if (value.startsWith("/")) {
       const executed = await executeSlashCommand(value);
       if (executed) {
+        markSlashCommandUsed(value.trim().split(/\s+/)[0]);
         return;
       }
 

@@ -37,6 +37,27 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/exit", description: "Quit ZenoCLI", category: "mode" }
 ];
 
+/** In-memory recency tracker (session-scoped) for recently used slash commands. */
+const recentCommands: string[] = [];
+
+/** Mark a command as used so it floats to the top of its group. */
+export function markSlashCommandUsed(command: string): void {
+  const index = recentCommands.indexOf(command);
+  if (index !== -1) {
+    recentCommands.splice(index, 1);
+  }
+  recentCommands.unshift(command);
+  if (recentCommands.length > 10) {
+    recentCommands.pop();
+  }
+}
+
+/** Rank a command: lower = higher up (recent commands first, then alpha). */
+function recencyRank(command: string): number {
+  const index = recentCommands.indexOf(command);
+  return index === -1 ? recentCommands.length + 100 : index;
+}
+
 export function filterSlashCommands(input: string): SlashCommand[] {
   if (!input.startsWith("/")) {
     return [];
@@ -44,11 +65,17 @@ export function filterSlashCommands(input: string): SlashCommand[] {
 
   const query = input.slice(1).trim().toLowerCase();
 
-  if (!query) {
-    return SLASH_COMMANDS;
-  }
+  const matches = query
+    ? SLASH_COMMANDS.filter(({ command }) => command.slice(1).includes(query))
+    : SLASH_COMMANDS;
 
-  return SLASH_COMMANDS.filter(({ command }) => command.slice(1).includes(query));
+  // Recency-first ordering within the same category (stable for the rest).
+  return matches.sort((a, b) => {
+    if (a.category !== b.category) {
+      return 0;
+    }
+    return recencyRank(a.command) - recencyRank(b.command);
+  });
 }
 
 export function findSlashCommand(input: string): SlashCommand | undefined {
