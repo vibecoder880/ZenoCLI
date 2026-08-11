@@ -71,7 +71,7 @@ describe("ModelRegistry", () => {
     const registry = new ModelRegistry();
     expect(registry.getAll().length).toBeGreaterThanOrEqual(8);
     expect(registry.getByProvider("openai").length).toBe(4);
-    expect(registry.getByTier("premium").length).toBe(4);
+    expect(registry.getByTier("premium").length).toBe(5);
   });
 
   it("looks up a model by id", () => {
