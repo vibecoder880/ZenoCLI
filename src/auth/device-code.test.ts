@@ -68,7 +68,10 @@ describe("pollForDeviceToken", () => {
     expect(token.access_token).toBe("at-1");
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
-    expect(init.body?.toString()).toContain("grant_type=urn:ietf:params:oauth:grant-type:device_code");
+    // URLSearchParams encodes the colon in the URN; assert the encoded form.
+    expect(init.body?.toString()).toContain(
+      "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+    );
     expect(init.body?.toString()).toContain("device_code=device-abc");
   });
 
