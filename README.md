@@ -2,14 +2,24 @@
 
 ZenoCLI is a terminal coding assistant focused on a clean CLI, multiple model providers, local auth profile storage, and a pragmatic path to agentic workflows.
 
-## Current scope
+## What it is
 
-- Interactive TUI with Ink
-- One-shot chat command
-- Local tool-using agent loop
-- Provider routing with model aliases
-- Local auth profile store for OpenAI, Anthropic, and Google API keys
-- Release packaging for Windows and Linux through GitHub Actions
+ZenoCLI is a professional, multi-provider terminal coding agent with:
+
+- **Interactive Ink TUI** — sticky header, welcome banner, slash palette,
+  theme system (dark/light/custom), colorized diff viewer, agent status stream
+- **One-shot chat** and a **local tool-using agent loop** with streaming events,
+  context compaction, mid-turn corrections, and headless CI mode
+- **75+ LLM providers** — OpenAI, Anthropic, Google, plus any OpenAI-compatible
+  endpoint (OpenRouter, xAI, Azure, Groq, local Ollama) from `config.toml`
+- **Smart model routing** — cost / quality / speed / balanced strategies with
+  optional budget limits and auto-downgrade
+- **Local auth** — encrypted API-key profiles, PKCE OAuth, auto-refresh, and
+  Device Code Flow for headless environments
+- **Code review** — `zeno review` gates PRs by severity
+- **Lifecycle hooks** — 7 events (claude-code parity), **custom slash
+  commands**, and **MCP server** support
+- **Release packaging** for Windows, Linux, and macOS via GitHub Actions
 
 ## Requirements
 
@@ -95,10 +105,10 @@ Example layout (first-run, no auth yet):
 
 ```
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.7.1                                                            │
+│ ZenoCLI · v0.7.7                                                            │
 │ openai/gpt-4.1-mini                                                          │
-│ session <id> · chat · 🔒 Default (prompt for writes) · $0.0000 · 0 tok · 0   │
-│ hist                                                                         │
+│ session abc123 · chat · 🔒 Default (prompt for writes) · $0.0000 · 0 tok ·   │
+│ 0 hist                                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
@@ -109,7 +119,7 @@ Example layout (first-run, no auth yet):
 │ ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝                                 │
 │ ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝                                  │
 │                                                                              │
-│ v0.7.1 · /path/to/project                                                    │
+│ v0.7.7 · /path/to/project                                                    │
 │                                                                              │
 │ Providers                                                                    │
 │ ✗ openai (no auth)                                                           │
@@ -133,6 +143,28 @@ Example layout (first-run, no auth yet):
 > Ask ZenoCLI to help (chat mode)
 
  Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
+```
+
+Debug/deployment/agent view looks like this — status line, live tool stream, and
+a colorized diff after a file edit (theme-aware):
+
+```
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ ZenoCLI · v0.7.7                     anthropic/claude-sonnet-4-0             │
+│ session abc123 · agent · Default · $0.0012 · 1,240 tok · 2 hist              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+  > Refactor the parser to use async iterators.
+  ↘ run_command(npx vitest run src/parser)     ✓ 18 tests passed
+  ✎ edit_file(parser.ts)                        ✓ 124 insertions, 38 deletions
+
+  @@ -142,7 +142,8 @@
+  -  const items: string[] = [];
+  +  const items: string[] = [];
+  +  for await (const chunk of stream) { ... }
+
+  ✓ Refactored parser to async iterators.
+  Turns: 4 | Tokens: 1,240 | Tools: run_command, edit_file, read_file
 ```
 
 Type a prompt and press `Enter` to send it. Press `/` to browse slash commands (use `↑`/`↓` to navigate, `Tab` to fill, `Enter` to run). Press `Esc` to exit.
@@ -186,6 +218,23 @@ node dist/index.js review --pipe --diff origin/main...HEAD
 
 `--diff <ref>` reviews the files changed vs a git ref. The reviewer subagent
 uses an economy-tier metadata model by default.
+
+Manage MCP servers — list what's configured, or verify one starts and shows
+its tools:
+
+```bash
+node dist/index.js mcp                    # list [mcp.servers]
+node dist/index.js mcp --verify filesystem  # start + list tools
+```
+
+MCP servers declared in `config.toml` are started when the agent loop runs;
+their tools are available to the agent as `mcp__<server>__<tool>`:
+
+```toml
+[mcp.servers.filesystem]
+command = "npx"
+args = ["tsx", "node_modules/super-kit/core/mcp-servers/filesystem/server.ts"]
+```
 
 Show recent history and tracked token usage:
 

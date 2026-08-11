@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.7 - 2026-08-12
+
+### Features
+- MCP support is now wired end-to-end: servers declared in `[mcp.servers]` are started via the stdio client and their tools registered as `mcp__<server>__<tool>` for the agent to call
+- New `zeno mcp` command lists configured servers and `--verify <name>` starts one to show its tools
+- SubagentStop lifecycle hook fires when a subagent completes, completing the 7-event hook set (claude-code parity)
+- super-kit is now a dependency (GitHub tarball), exposing its MCP servers (filesystem/git/database/browser/vietnam) to configure
+
+### Security
+- super-kit repo made public so CI can install the tarball dependency
+
 ## 0.7.6 - 2026-08-12
 
 ### Features
