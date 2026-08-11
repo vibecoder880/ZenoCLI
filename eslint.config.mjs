@@ -4,9 +4,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    // ClaudeKit tooling under .claude/ is CJS hooks/skills external to this
-    // project; lint only the project's own source.
-    ignores: ["dist/**", "node_modules/**", ".claude/**"]
+    ignores: ["dist/**", "node_modules/**"]
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

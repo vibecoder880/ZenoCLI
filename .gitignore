@@ -1,6 +1,8 @@
 node_modules/
 dist/
 release/
+# ClaudeKit tooling — local, not part of this repo
+.claude/
 release-notes.md
 *.tgz
 .DS_Store
