@@ -19,6 +19,7 @@ import {
 } from "./cli/commands/history.js";
 import { runInitCommand } from "./cli/commands/init.js";
 import { runReviewCommand } from "./cli/commands/review.js";
+import { runMcpCommand } from "./cli/commands/mcp.js";
 import { runHealthCommand, runModelsCommand } from "./cli/commands/providers.js";
 import { runVersionCommand } from "./cli/commands/version.js";
 import { loadConfig } from "./storage/config.js";
@@ -180,6 +181,14 @@ program
   .argument("[targetCwd]", "Optional working directory")
   .action(async (targetCwd?: string) => {
     await runDoctorCommand(targetCwd ?? process.cwd());
+  });
+
+program
+  .command("mcp")
+  .description("List configured MCP servers or verify one")
+  .option("--verify <name>", "Start a server and list its tools")
+  .action(async (options: { verify?: string }) => {
+    await runMcpCommand(options);
   });
 
 program
