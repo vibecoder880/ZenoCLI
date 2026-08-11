@@ -14,7 +14,18 @@ describe("filterSlashCommands", () => {
   });
 
   it("returns all slash commands for a bare slash", () => {
-    expect(filterSlashCommands("/")).toEqual(SLASH_COMMANDS);
+    const result = filterSlashCommands("/");
+    // Same set as SLASH_COMMANDS, ordered by category.
+    expect(result).toHaveLength(SLASH_COMMANDS.length);
+    expect(new Set(result.map((entry) => entry.command)))
+      .toEqual(new Set(SLASH_COMMANDS.map((entry) => entry.command)));
+  });
+
+  it("orders a bare-slash palette by category", () => {
+    const categories = filterSlashCommands("/").map((entry) => entry.category);
+    const order = ["mode", "session", "debug", "info"];
+    const positions = [...new Set(categories.map((category) => order.indexOf(category)))];
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
   it("filters commands by substring", () => {
