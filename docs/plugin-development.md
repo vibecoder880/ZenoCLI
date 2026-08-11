@@ -5,13 +5,13 @@ Hướng dẫn tạo plugins/skills/MCP servers cho ZenoCLI.
 ## Built-in Skills
 
 Skills là markdown files với frontmatter, loaded từ:
-- `~/.Zenocli/skills/` (global)
+- `~/.zenocli/skills/` (global)
 - `.zeno/skills/` (project)
-- `src/plugins/builtin/` (built-in)
+- `src/plugins/builtin/` (built-in — bundled skills review, fix, test)
 
 ### Tạo một Skill
 
-Tạo file `~/.Zenocli/skills/deploy.md`:
+Tạo file `~/.zenocli/skills/deploy.md`:
 
 ```markdown
 ---
@@ -42,7 +42,7 @@ Model Context Protocol (MCP) cho phép ZenoCLI kết nối với external tools.
 
 ### Config
 
-Trong `~/.Zenocli/config.toml`:
+Trong `~/.zenocli/config.toml`:
 ```toml
 [mcp.servers.my-server]
 command = "node"
@@ -90,8 +90,9 @@ Tools từ MCP server tự động xuất hiện với namespace `mcp__server-na
 Tạo custom agent roles cho subagent spawning.
 
 ### File location
-- `~/.Zenocli/agents/` (global)
+- `~/.zenocli/agents/` (global)
 - `.zeno/agents/` (project)
+- `src/agents/` (built-in agents: researcher, coder, reviewer, tester, coordinator)
 
 ### Format
 ```markdown
@@ -112,7 +113,7 @@ You are a security specialist. Your job is to:
 4. Review sensitive data exposure
 ```
 
-Sử dụng với `spawnTypedSubagent` hoặc coordinator agent.
+Sử dụng với `spawnTypedSubagent(type, options)` — lưu ý: `spawnTypedSubagent` hiện chỉ nhận 4 preset types (`researcher`, `coder`, `tester`, `reviewer`). Custom agents được load qua `AgentDefinitionLoader` (from `~/.zenocli/agents/`, `.zeno/agents/`, hoặc `src/agents/`), nhưng loader chưa được nối vào CLI/TUI trong code hiện tại.
 
 ## Lifecycle Hooks
 
