@@ -31,6 +31,15 @@ export interface AIModel {
 /** Default model metadata for the providers ZenoCLI ships with. */
 const DEFAULT_MODELS: AIModel[] = [
   {
+    id: "openai/gpt-4o",
+    provider: "openai",
+    name: "GPT-4o",
+    tier: "premium",
+    latencyMs: 2600,
+    qualityScore: 9.0,
+    pricing: { inputPerMillion: 2.5, outputPerMillion: 10 },
+  },
+  {
     id: "openai/gpt-4.1",
     provider: "openai",
     name: "GPT-4.1",
@@ -56,6 +65,15 @@ const DEFAULT_MODELS: AIModel[] = [
     latencyMs: 900,
     qualityScore: 6.5,
     pricing: { inputPerMillion: 0.15, outputPerMillion: 0.6 },
+  },
+  {
+    id: "anthropic/claude-opus-4",
+    provider: "anthropic",
+    name: "Claude Opus 4",
+    tier: "premium",
+    latencyMs: 4500,
+    qualityScore: 9.5,
+    pricing: { inputPerMillion: 15, outputPerMillion: 75 },
   },
   {
     id: "anthropic/claude-sonnet-4-0",

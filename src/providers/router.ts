@@ -1,4 +1,5 @@
 import { DEFAULT_CONFIG, type ZenoConfig } from "../storage/config.js";
+import { BudgetTracker } from "../core/budget-tracker.js";
 import { ModelRegistry } from "./model-registry.js";
 import { SmartRouter } from "./smart-router.js";
 
@@ -39,7 +40,11 @@ export function resolveModelRoute(
     if (model === "auto") {
       // Route through the Super Kit-inspired SmartRouter, preferring the
       // configured strategy (config.routing?.strategy) or balanced by default.
-      const strategy = config.routing?.strategy ?? "balanced";
+      // Under budget pressure the tracker downgrades to the cost strategy so
+      // spend stays within the configured daily/monthly limits.
+      const status = new BudgetTracker(config.budget ?? {}).getStatus();
+      const strategy =
+        status.shouldDowngrade ? "cost" : (config.routing?.strategy ?? "balanced");
       const decision = new SmartRouter(new ModelRegistry()).route(strategy);
       const [routeProvider, routeModel] = decision.selected.id.includes("/")
         ? decision.selected.id.split("/", 2)

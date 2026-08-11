@@ -34,6 +34,17 @@ export interface ZenoConfig {
     /** cost | quality | speed | balanced (default: balanced). */
     strategy?: "cost" | "quality" | "speed" | "balanced";
   };
+  /** Spend budget with optional limits and auto-downgrade. */
+  budget?: {
+    /** Daily spend limit in USD (0 = unlimited). */
+    dailyLimitUsd?: number;
+    /** Monthly spend limit in USD (0 = unlimited). */
+    monthlyLimitUsd?: number;
+    /** Alert threshold as a fraction of budget (0-1). Default 0.8. */
+    alertThreshold?: number;
+    /** Downgrade routing to cost when budget is nearly used. Default true. */
+    autoDowngrade?: boolean;
+  };
   mcp?: {
     servers: Record<string, {
       command: string;
@@ -79,6 +90,12 @@ export const DEFAULT_CONFIG: ZenoConfig = {
   providers: {},
   routing: {
     strategy: "balanced"
+  },
+  budget: {
+    dailyLimitUsd: 0,
+    monthlyLimitUsd: 0,
+    alertThreshold: 0.8,
+    autoDowngrade: true
   }
 };
 
@@ -135,6 +152,10 @@ function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
     routing: {
       ...(DEFAULT_CONFIG.routing ?? {}),
       ...(partial?.routing ?? {})
+    },
+    budget: {
+      ...(DEFAULT_CONFIG.budget ?? {}),
+      ...(partial?.budget ?? {})
     }
   };
 }

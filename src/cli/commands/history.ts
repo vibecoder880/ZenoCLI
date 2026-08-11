@@ -1,4 +1,6 @@
 import { clearHistory, getHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../../storage/history.js";
+import { BudgetTracker } from "../../core/budget-tracker.js";
+import { loadConfig } from "../../storage/config.js";
 
 export function runHistoryListCommand(limit = 10): void {
   const entries = listHistoryEntries(limit);
@@ -51,4 +53,15 @@ export function runCostCommand(): void {
   console.log(`History entries: ${usage.totalEntries}`);
   console.log(`Total tokens tracked: ${usage.totalTokens}`);
   console.log(`Estimated total cost (USD): $${usage.totalEstimatedCostUsd.toFixed(6)}`);
+
+  const budget = new BudgetTracker(loadConfig().budget ?? {}).getStatus();
+  const fmt = (value: number): string => (value === Infinity ? "∞" : `$${value.toFixed(2)}`);
+  console.log(`Today spend: $${budget.todaySpendUsd.toFixed(2)} (daily left: ${fmt(budget.dailyRemainingUsd)})`);
+  console.log(`Month spend: $${budget.monthSpendUsd.toFixed(2)} (monthly left: ${fmt(budget.monthlyRemainingUsd)})`);
+
+  if (budget.overDaily || budget.overMonthly) {
+    console.log("⚠ Budget exceeded — router downgrading to cost strategy.");
+  } else if (budget.alert) {
+    console.log("⚠ Budget alert — approaching configured limit.");
+  }
 }

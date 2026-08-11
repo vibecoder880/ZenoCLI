@@ -6,7 +6,7 @@ import { createProvider } from "../../providers/index.js";
 import { estimateCostUsd } from "../../providers/pricing.js";
 import { selectUsableRoute } from "../../providers/router-fallback.js";
 import { loadConfig } from "../../storage/config.js";
-import { appendHistoryEntry } from "../../storage/history.js";
+import { appendHistoryEntry, recordBudgetSpend } from "../../storage/history.js";
 
 interface RunChatOptions {
   prompt: string;
@@ -59,4 +59,9 @@ export async function runChatCommand(options: RunChatOptions): Promise<void> {
     outputTokens: result.outputTokens,
     estimatedCostUsd: estimateCostUsd(route.provider, route.model, result.inputTokens, result.outputTokens)
   });
+
+  const cost = estimateCostUsd(route.provider, route.model, result.inputTokens, result.outputTokens);
+  if (cost !== undefined) {
+    recordBudgetSpend(cost);
+  }
 }

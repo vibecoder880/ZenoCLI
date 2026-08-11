@@ -18,7 +18,7 @@ import { filterSlashCommands, findSlashCommand, SLASH_COMMANDS } from "./slash-c
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
 import { getConfigPathname, loadConfig } from "../storage/config.js";
-import { appendHistoryEntry, listHistoryEntries, summarizeTokenUsage } from "../storage/history.js";
+import { appendHistoryEntry, listHistoryEntries, recordBudgetSpend, summarizeTokenUsage } from "../storage/history.js";
 import { listProviderCatalog, tryCreateProvider } from "../providers/index.js";
 import { ContextManager } from "../core/context-manager.js";
 import { getMergedInstructions, getInstructionsSummary } from "../core/zeno-md.js";
@@ -657,6 +657,9 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         const requestCost =
           estimateCostUsd(route.provider, route.model, result.inputTokens, result.outputTokens) ?? 0;
         setSessionCost((current) => Number((current + requestCost).toFixed(6)));
+        if (requestCost > 0) {
+          recordBudgetSpend(requestCost);
+        }
         setAgentLines([
           "Response complete",
           `Request cost $${requestCost.toFixed(6)}`

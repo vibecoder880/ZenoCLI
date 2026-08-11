@@ -57,6 +57,26 @@ export function appendHistoryEntry(entry: Omit<HistoryEntry, "id" | "createdAt">
   return savedEntry;
 }
 
+/** Record the estimated cost of a request into the budget tracker. */
+export function recordBudgetSpend(costUsd: number, when = new Date()): void {
+  // Budget entries persist under ~/.zenocli/budget.json, independent of history
+  // so budget tracking survives history truncation.
+  const storePath = getBudgetStorePath();
+  let entries: Array<{ ts: string; costUsd: number }> = [];
+  try {
+    const parsed = JSON.parse(readFileSync(storePath, "utf8")) as { entries?: Array<{ ts: string; costUsd: number }> };
+    entries = Array.isArray(parsed.entries) ? parsed.entries : [];
+  } catch {
+    entries = [];
+  }
+  entries.push({ ts: when.toISOString(), costUsd });
+  writeFileSync(storePath, JSON.stringify({ entries }, null, 2), "utf8");
+}
+
+function getBudgetStorePath(): string {
+  return path.join(ensureAppDataDirectory(), "budget.json");
+}
+
 export function listHistoryEntries(limit = 20): HistoryEntry[] {
   return loadHistoryStore().entries.slice(0, limit);
 }

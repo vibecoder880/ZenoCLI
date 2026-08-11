@@ -106,6 +106,11 @@ export class AnthropicProvider implements AiProvider {
   public async listModels(): Promise<ModelInfo[]> {
     return [
       {
+        id: "claude-opus-4",
+        displayName: "Claude Opus 4",
+        provider: this.slug,
+      },
+      {
         id: "claude-sonnet-4-0",
         displayName: "Claude Sonnet 4",
         provider: this.slug,
