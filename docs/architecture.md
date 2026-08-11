@@ -114,7 +114,9 @@ Agent Loop (orchestrator)
 ### Providers (`src/providers/`)
 - **base.ts** — `AiProvider` contract (`chat()` streaming, `listModels()`, `healthCheck()`). `ChatRequest` accepts an optional `signal?: AbortSignal` so an in-flight streaming request can be cancelled.
 - **openai.ts** / **anthropic.ts** / **google.ts** — Provider adapters. Each passes `request.signal` into its SDK call (OpenAI `create(…, { signal })`, Anthropic `stream(…, { signal })`, Google `fetch(…, { signal })`)
-- **router.ts** — Model route resolution (explicit `provider/model`, alias, or prefix inference)
+- **router.ts** — Model route resolution (explicit `provider/model`, alias, or prefix inference; `auto` routes through the SmartRouter)
+- **smart-router.ts** — Super Kit-inspired `SmartRouter` selecting a model by `cost`/`quality`/`speed`/`balanced` strategy (drives `--model auto`)
+- **model-registry.ts** — `ModelRegistry` with tier, quality score, latency, and pricing per model
 - **router-fallback.ts** — Usable-route fallback (`[aliases.smart, aliases.fast, aliases.cheap, default.model]`)
 - **pricing.ts** — Static pricing table + `estimateCostUsd()`
 - **catalog.ts** — Provider catalog

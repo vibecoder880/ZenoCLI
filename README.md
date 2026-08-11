@@ -212,6 +212,33 @@ node dist/index.js chat "Review this code" --model claude-sonnet-4-0
 node dist/index.js chat "Summarize this file" --model google/gemini-2.5-pro
 ```
 
+### Smart routing (`--model auto`)
+
+`zeno ... --model auto` routes through a Super Kit-inspired smart router that
+picks the best model by strategy — `cost` / `quality` / `speed` / `balanced`
+(default `balanced`). Configure the strategy in `~/.zenocli/config.toml`:
+
+```toml
+[routing]
+strategy = "balanced"   # cost | quality | speed | balanced
+```
+
+### Budget tracking
+
+Optional daily/monthly spend limits with automatic downgrade to the cost
+strategy when the budget is nearly used:
+
+```toml
+[budget]
+dailyLimitUsd = 2.0
+monthlyLimitUsd = 50.0
+alertThreshold = 0.8      # alert at 80% of budget
+autoDowngrade = true      # route to cheap models when near the limit
+```
+
+`zeno cost` shows today's and the month's spend, remaining budget, and any
+budget alert.
+
 ## Project instructions
 
 If a project contains `ZENO.md` in the working directory, ZenoCLI injects that file as project-specific guidance for chat and agent requests.

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.3 - 2026-08-12
+
+### Features
+- Super Kit-inspired smart model routing: `--model auto` picks the best model by strategy (`cost` / `quality` / `speed` / `balanced`) instead of a static alias
+- Model registry with tier, quality score, latency, and pricing — expanded to 8 models including `claude-opus-4` and `gpt-4o`
+- Budget tracking with optional daily/monthly USD limits, alert threshold, and automatic downgrade to the cost strategy when the budget is nearly used (`config.budget`)
+- `zeno cost` now reports today's and the month's spend plus remaining budget and alerts
+- Provider registry is config-driven: additional providers can be declared in `config.toml` `[providers]`
+
+### Docs
+- README documents `--model auto`, routing strategies, and budget config
+- Architecture doc lists smart-router, model-registry, and budget-tracker modules
+
 ## 0.7.2 - 2026-08-11
 
 ### Features
