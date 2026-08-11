@@ -279,6 +279,47 @@ baseURL = "http://localhost:11434/v1"   # no apiKey needed for local servers
 Then use it with `zeno chat "..." --provider openrouter --model <model-id>`.
 The API key is read from `apiKeyEnv`; local servers can omit it.
 
+### Custom slash commands
+
+Define your own `/command`s in `config.toml` that send a prompt template —
+perfect for frequent, reusable instructions:
+
+```toml
+[commands.refactor]
+prompt = "Refactor the current file for clarity, keeping behavior identical."
+
+[commands.changelog]
+prompt = "Summarize the last 10 commits into a changelog entry."
+```
+
+Type `/refactor` (or `/refactor with these notes`) in the TUI to run it.
+
+### Lifecycle hooks
+
+The agent fires 7 lifecycle events (matching Claude Code): `PreToolUse`,
+`PostToolUse`, `SessionStart`, `SessionEnd`, `Notification`, `Stop`, and
+`SubagentStop`. Configure shell/prompt hooks:
+
+```toml
+[hooks.Stop]
+command = "echo 'agent finished'"
+```
+
+### TUI theme
+
+Switch the TUI color theme or override individual colors:
+
+```toml
+[theme]
+mode = "dark"                  # dark (default) | light
+
+[theme.palette]
+primary = "magenta"            # optional per-key overrides
+success = "green"
+warning = "yellowBright"
+muted = "gray"
+```
+
 ### Budget tracking
 
 Optional daily/monthly spend limits with automatic downgrade to the cost

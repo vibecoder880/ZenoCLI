@@ -110,6 +110,7 @@ Agent Loop (orchestrator)
 - **slash-commands.ts** — Slash command definitions với category grouping
 - **commands/** — Individual CLI commands: chat/agent support `--non-interactive`/`--pipe` headless output; `review` runs the reviewer subagent over a target or git diff
 - **components/** — Header, MessageList, AgentStatus, Prompt, SlashMenu, Footer, WelcomeBanner; `DiffView` colors unified diffs (+green/-red) in message bubbles; `ModelsDialog` tier-grouped model picker; `ForkDialog` message-index session fork
+- **theme.tsx** — TUI color theming: `ThemeProvider` + `useTheme()` over a semantic `ThemePalette` (dark/light/custom from `config.theme`)
 - **hooks/** — useMultiLineInput, useFirstRun
 
 ### Providers (`src/providers/`)

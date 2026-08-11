@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.6 - 2026-08-12
+
+### Features
+- Custom slash commands: define `[commands.<name>]` in config.toml with a prompt template; run `/name` in the TUI (opencode/claude-code style)
+- Stop lifecycle hook: the agent loop fires `Stop` when it completes (success or abort), completing the 7-event hook set (PreToolUse, PostToolUse, SessionStart, SessionEnd, Notification, Stop, SubagentStop)
+- TUI theme system: `[theme]` config with `mode = "dark" | "light"` and per-key palette overrides (primary/success/warning/muted); Header/Footer/WelcomeBanner consume the palette instead of hardcoded colors
+
+### Docs
+- README documents custom commands, the Stop hook, and theme config
+- Architecture doc lists the theme module
+
 ## 0.7.5 - 2026-08-12
 
 ### Features
