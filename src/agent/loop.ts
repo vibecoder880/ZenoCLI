@@ -114,7 +114,21 @@ function buildSystemPrompt(toolSpecs: string, projectInstructions?: string, memo
 /** Register built-in tools on first call. */
 let toolsRegistered = false;
 
+/**
+ * Run the agent loop and fire the Stop lifecycle hook when it completes
+ * (success or abort). Fired once regardless of which return point is hit.
+ */
 export async function runAgentLoop(options: AgentLoopOptions): Promise<AgentLoopResult> {
+  try {
+    return await runAgentLoopInternal(options);
+  } finally {
+    if (options.hooks && options.hooks.count > 0) {
+      void options.hooks.fire("Stop", { cwd: options.toolContext.cwd });
+    }
+  }
+}
+
+async function runAgentLoopInternal(options: AgentLoopOptions): Promise<AgentLoopResult> {
   // Ensure tools are registered
   if (!toolsRegistered) {
     registerAllTools();

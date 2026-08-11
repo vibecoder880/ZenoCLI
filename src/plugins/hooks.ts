@@ -13,7 +13,14 @@ const execAsync = promisify(exec);
 
 // ---- Types ----
 
-export type HookEvent = "PreToolUse" | "PostToolUse" | "SessionStart" | "SessionEnd" | "Notification";
+export type HookEvent =
+  | "PreToolUse"
+  | "PostToolUse"
+  | "SessionStart"
+  | "SessionEnd"
+  | "Notification"
+  | "Stop"
+  | "SubagentStop";
 
 export interface HookConfig {
   /** Which event to fire on. */

@@ -28,6 +28,14 @@ describe("HookRunner", () => {
     expect(runner.getHooks("SessionEnd")).toHaveLength(0);
   });
 
+  it("supports the Stop lifecycle events", () => {
+    runner.addHook({ event: "Stop", command: "echo stop" });
+    runner.addHook({ event: "SubagentStop", command: "echo sub" });
+
+    expect(runner.getHooks("Stop")).toHaveLength(1);
+    expect(runner.getHooks("SubagentStop")).toHaveLength(1);
+  });
+
   it("filters hooks by tool name match", () => {
     runner.addHook({ event: "PreToolUse", match: "edit_file", command: "echo edit" });
     runner.addHook({ event: "PreToolUse", match: "write_file", command: "echo write" });

@@ -73,6 +73,8 @@ export interface ZenoConfig {
     SessionStart?: Array<{ command?: string; prompt?: string }>;
     SessionEnd?: Array<{ command?: string; prompt?: string }>;
     Notification?: Array<{ command?: string; prompt?: string }>;
+    Stop?: Array<{ command?: string; prompt?: string }>;
+    SubagentStop?: Array<{ command?: string; prompt?: string }>;
   };
 }
 
@@ -100,7 +102,12 @@ export const DEFAULT_CONFIG: ZenoConfig = {
   },
   hooks: {
     PreToolUse: [],
-    PostToolUse: []
+    PostToolUse: [],
+    SessionStart: [],
+    SessionEnd: [],
+    Notification: [],
+    Stop: [],
+    SubagentStop: []
   },
   providers: {},
   routing: {
@@ -160,6 +167,26 @@ function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
       PostToolUse: [
         ...(DEFAULT_CONFIG.hooks?.PostToolUse ?? []),
         ...(partial?.hooks?.PostToolUse ?? [])
+      ],
+      SessionStart: [
+        ...(DEFAULT_CONFIG.hooks?.SessionStart ?? []),
+        ...(partial?.hooks?.SessionStart ?? [])
+      ],
+      SessionEnd: [
+        ...(DEFAULT_CONFIG.hooks?.SessionEnd ?? []),
+        ...(partial?.hooks?.SessionEnd ?? [])
+      ],
+      Notification: [
+        ...(DEFAULT_CONFIG.hooks?.Notification ?? []),
+        ...(partial?.hooks?.Notification ?? [])
+      ],
+      Stop: [
+        ...(DEFAULT_CONFIG.hooks?.Stop ?? []),
+        ...(partial?.hooks?.Stop ?? [])
+      ],
+      SubagentStop: [
+        ...(DEFAULT_CONFIG.hooks?.SubagentStop ?? []),
+        ...(partial?.hooks?.SubagentStop ?? [])
       ]
     },
     providers: {
