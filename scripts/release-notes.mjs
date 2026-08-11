@@ -21,27 +21,34 @@ if (!match) {
 
 /**
  * Classify a changelog bullet into Features / Fixes / Docs / Other.
- * The current changelog has no explicit category labels, so we infer them
- * from the leading tokens of each bullet.
+ * The changelog uses plain prose bullets (no explicit category labels), so the
+ * category is inferred from keywords. Fixes and docs win; anything that adds,
+ * hardens, or enhances behavior (including security work) lands in Features.
  */
 function classifyBullet(bullet) {
   const lower = bullet.toLowerCase();
 
-  if (/\b(fix|fixed|fixes|bug|bugfix|correct|patch)/.test(lower)) {
+  if (/\b(fix|fixed|fixes|bug|bugfix|correct|patch|harden|hardened|regression)\b/.test(lower)) {
     return "Fixes";
   }
-  if (/\b(docs?|documentation|readme|guide|guidebook)\b/.test(lower)) {
+  if (/\b(docs?|documentation|readme|readme.md|guide|guidebook|changelog)\b/.test(lower)) {
     return "Docs";
   }
-  if (/\b(feat|feature|adds?|new|support|implements|introduces|phase \d)/.test(lower)) {
+  if (
+    /\b(feat|feature|adds?|add|new|support|implements|introduces|introduce|enable|enabled|improve|improved|capabilit|ability|allow|allows|auto|automate|refresh|pkce|oauth|token|encrypt|decrypt|security|sandbox|plugin|hook|mcp|provider|command|flag|pipeline|release)\b/.test(
+      lower
+    )
+  ) {
     return "Features";
   }
   return "Other";
 }
 
-// Extract the changelog body for this version, preserving any "Phase N" title.
+// Extract the changelog body for this version. A "Phase N" heading becomes the
+// release's banner title; plain sub-headings (Features/Security/Notes) are
+// changelog organization and are NOT treated as the phase title.
 const rawBody = match[1].trim();
-const phaseMatch = rawBody.match(/^###\s+([^\n]+)/);
+const phaseMatch = rawBody.match(/^###\s+(Phase\s+\d[^\n]*)/i);
 const phaseTitle = phaseMatch ? phaseMatch[1].trim() : undefined;
 
 // Collect bullet lines (lines starting with "- " or "* ") and drop the title/heading.
