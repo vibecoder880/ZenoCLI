@@ -54,6 +54,26 @@ describe("Subagent", () => {
     expect(result.tokensUsed).toBe(10);
   });
 
+  it("fires the SubagentStop hook when it completes", async () => {
+    const fired: string[] = [];
+    const hooks = {
+      count: 1,
+      fire: async (event: string) => {
+        fired.push(event);
+        return { proceed: true };
+      },
+    } as unknown as Parameters<typeof spawnTypedSubagent>[1]["hooks"];
+
+    await spawnTypedSubagent("researcher", {
+      task: "Find all TypeScript files in the project",
+      provider: new MockProvider(),
+      cwd: "/tmp",
+      hooks,
+    });
+
+    expect(fired).toContain("SubagentStop");
+  });
+
   it("spawns a coder subagent", async () => {
     const result = await spawnTypedSubagent("coder", {
       task: "Add a new function to the codebase",

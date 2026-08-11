@@ -10,6 +10,7 @@ import { ContextManager } from "../core/context-manager.js";
 import { collectProviderText } from "../core/stream.js";
 import type { ToolExecutionContext } from "./tool-registry.js";
 import { getToolDefinitionsForApi, executeTool } from "./tool-registry.js";
+import type { HookRunner } from "../plugins/hooks.js";
 import os from "node:os";
 
 // ---- Types ----
@@ -41,6 +42,8 @@ export interface SubagentOptions {
   maxRetries?: number;
   /** Base retry delay in ms; doubles with backoff each retry (default: 1000). */
   retryBaseDelayMs?: number;
+  /** Hook runner to fire SubagentStop when this subagent completes. */
+  hooks?: HookRunner;
 }
 
 export interface SubagentResult {
@@ -139,6 +142,7 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
     timeout = 5 * 60 * 1000, // 5 min
     projectInstructions,
     memoryContent,
+    hooks,
   } = options;
 
   const tools = options.tools ?? READ_ONLY_TOOLS;
@@ -192,6 +196,10 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
     // Log for debugging
     if (process.env.ZENOCLI_DEBUG) {
       console.error(`Subagent completed in ${elapsed}ms`);
+    }
+    // Fire the SubagentStop lifecycle hook once the subagent finishes.
+    if (hooks && hooks.count > 0) {
+      void hooks.fire("SubagentStop", { cwd });
     }
   }
 }
