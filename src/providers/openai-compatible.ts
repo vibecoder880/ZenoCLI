@@ -30,7 +30,9 @@ export class OpenAiCompatibleProvider implements AiProvider {
     this.name = options.name;
     this.client = new OpenAI({
       baseURL: options.baseURL,
-      ...(options.apiKey ? { apiKey: options.apiKey } : {}),
+      // The SDK requires an apiKey option even for local servers; use a
+      // placeholder when none is configured (Ollama, etc. ignore it).
+      apiKey: options.apiKey ?? "not-needed",
     });
   }
 
