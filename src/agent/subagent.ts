@@ -333,6 +333,8 @@ interface SubagentLoopResult {
   success: boolean;
   turns: number;
   toolsUsed: string[];
+  /** Reason for failure, when success is false (e.g. "aborted"). */
+  error?: string;
 }
 
 // ---- Spawn by Agent Type ----
