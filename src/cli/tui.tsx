@@ -24,7 +24,8 @@ import { listProviderCatalog, tryCreateProvider } from "../providers/index.js";
 import { ContextManager } from "../core/context-manager.js";
 import { getMergedInstructions, getInstructionsSummary } from "../core/zeno-md.js";
 import { getMemorySummary, loadMemory, readFullMemory } from "../core/memory.js";
-import { SessionWriter, listSessions, forkSession } from "../core/session.js";
+import { SessionReader, SessionWriter, listSessions } from "../core/session.js";
+import { ForkDialog } from "./components/ForkDialog.js";
 import { runAgentLoop, type AgentEvent } from "../agent/loop.js";
 import { CheckpointManager } from "../safety/checkpoints.js";
 import { ALL_PERMISSION_MODES, nextPermissionMode, permissionModeLabel, type PermissionMode } from "../safety/permissions.js";
@@ -71,6 +72,8 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   const [isBusy, setIsBusy] = useState(false);
   const [mode, setMode] = useState<AppMode>("chat");
   const [modelsOpen, setModelsOpen] = useState(false);
+  const [forkOpen, setForkOpen] = useState(false);
+  const [forkEntries, setForkEntries] = useState<import("../core/session.js").SessionEntry[]>([]);
   const [screen, setScreen] = useState<ScreenMode>("welcome");
   const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>(config.permission?.mode ?? "default");
@@ -394,9 +397,15 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       const session = sessionRef.current;
       if (session) {
         try {
-          const forked = forkSession(session.id, cwd);
-          sessionRef.current = forked;
-          setAgentLines([`Session forked: ${forked.id}`]);
+          const reader = new SessionReader(session.id, cwd);
+          const entries = reader.getEntries();
+          if (entries.length === 0) {
+            setAgentLines(["No messages to fork yet."]);
+            setInput("");
+            return true;
+          }
+          setForkEntries(entries);
+          setForkOpen(true);
         } catch (err) {
           setAgentLines([`Fork failed: ${err instanceof Error ? err.message : String(err)}`]);
         }
@@ -718,7 +727,20 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
           }}
         />
       ) : null}
-      {!modelsOpen && input.startsWith("/") ? (
+      {forkOpen ? (
+        <ForkDialog
+          sessionId={sessionRef.current?.id ?? ""}
+          cwd={cwd}
+          entries={forkEntries}
+          onClose={() => setForkOpen(false)}
+          onFork={(writer) => {
+            sessionRef.current = writer;
+            setForkOpen(false);
+            setAgentLines([`Session forked to ${writer.id}`]);
+          }}
+        />
+      ) : null}
+      {!modelsOpen && !forkOpen && input.startsWith("/") ? (
         <SlashMenu commands={slashCommands} selectedIndex={selectedSlashIndex} />
       ) : null}
       <Prompt

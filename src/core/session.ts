@@ -201,11 +201,17 @@ export function getLatestSessionId(cwd: string): string | undefined {
 }
 
 /** Fork a session: copy all entries to a new session file with a new ID. */
-export function forkSession(sessionId: string, cwd: string): SessionWriter {
+/**
+ * Fork a session to a new writer. When `upToIndex` is given, only entries up to
+ * (and excluding) that index are carried — forking "from a message".
+ */
+export function forkSession(sessionId: string, cwd: string, upToIndex?: number): SessionWriter {
   const reader = new SessionReader(sessionId, cwd);
   const writer = new SessionWriter(reader.meta.cwd, reader.meta.model, reader.meta.provider);
 
-  for (const entry of reader.getEntries()) {
+  const entries = reader.getEntries();
+  const slice = upToIndex === undefined ? entries : entries.slice(0, upToIndex);
+  for (const entry of slice) {
     writer.append(entry);
   }
   writer.close();
