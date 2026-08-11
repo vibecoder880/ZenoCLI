@@ -28,6 +28,12 @@ export interface ZenoConfig {
     authMethods?: Array<"oauth" | "api_key" | "local">;
     /** Env var holding the API key. */
     envKey?: string;
+    /** Provider type. "openai-compatible" uses a custom baseURL (opencode-style). */
+    type?: "openai-compatible";
+    /** Base URL for openai-compatible endpoints (e.g. https://openrouter.ai/api/v1). */
+    baseURL?: string;
+    /** Env var holding the API key for openai-compatible providers. */
+    apiKeyEnv?: string;
   }>;
   /** Model routing strategy for `model: auto`. */
   routing?: {

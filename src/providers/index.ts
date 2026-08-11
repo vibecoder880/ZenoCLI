@@ -2,6 +2,7 @@ import type { AiProvider } from "./base.js";
 import { AnthropicProvider } from "./anthropic.js";
 import { GoogleProvider } from "./google.js";
 import { OpenAiProvider } from "./openai.js";
+import { OpenAiCompatibleProvider } from "./openai-compatible.js";
 import { AuthProfileStore } from "../auth/auth-profiles.js";
 import { PROVIDER_CATALOG, type ProviderCatalogEntry } from "./catalog.js";
 import { loadConfig } from "../storage/config.js";
@@ -14,8 +15,20 @@ export function createProvider(slug: string, store = new AuthProfileStore()): Ai
       return new AnthropicProvider(store);
     case "google":
       return new GoogleProvider(store);
-    default:
+    default: {
+      // Config-declared openai-compatible providers: any baseURL-speaking-endpoint.
+      const config = loadConfig();
+      const entry = config.providers?.[slug];
+      if (entry?.type === "openai-compatible" && entry.baseURL) {
+        const apiKey = entry.apiKeyEnv ? process.env[entry.apiKeyEnv] : undefined;
+        return new OpenAiCompatibleProvider(slug, {
+          name: entry.name ?? slug,
+          baseURL: entry.baseURL,
+          ...(apiKey ? { apiKey } : {}),
+        });
+      }
       throw new Error(`Unsupported provider "${slug}".`);
+    }
   }
 }
 
@@ -45,7 +58,8 @@ export function listProviderCatalog(): ProviderCatalogEntry[] {
     ([slug, def]) => ({
       slug,
       name: def.name ?? slug,
-      authMethods: def.authMethods ?? (def.envKey ? ["api_key"] : ["api_key"]),
+      authMethods: def.authMethods ?? (def.type === "openai-compatible" ? ["api_key"] : (def.envKey ? ["api_key"] : ["api_key"])),
+      baseURL: def.baseURL,
     })
   );
 

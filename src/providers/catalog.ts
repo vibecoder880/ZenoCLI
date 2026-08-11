@@ -2,6 +2,8 @@ export interface ProviderCatalogEntry {
   slug: string;
   name: string;
   authMethods: Array<"oauth" | "api_key" | "local">;
+  /** Base URL for openai-compatible endpoints (optional). */
+  baseURL?: string;
 }
 
 export const PROVIDER_CATALOG: ProviderCatalogEntry[] = [
