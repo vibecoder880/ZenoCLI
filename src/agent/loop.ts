@@ -22,6 +22,8 @@ import { CheckpointManager } from "../safety/checkpoints.js";
 import { classifySafety } from "../safety/classifier.js";
 import { checkPermission, type PermissionConfig } from "../safety/permissions.js";
 import { HookRunner } from "../plugins/hooks.js";
+import { registerMcpServers } from "../plugins/mcp-registry.js";
+import { loadConfig, type ZenoConfig } from "../storage/config.js";
 
 // ---- Types ----
 
@@ -60,6 +62,8 @@ export interface AgentLoopOptions {
   hooks?: HookRunner;
   /** Permission prompt handler — returns true to allow, false to deny. */
   onPermissionPrompt?: (toolName: string, params: Record<string, unknown>, reason?: string) => Promise<boolean>;
+  /** Config for MCP server registration (defaults to loadConfig()). */
+  mcpConfig?: ZenoConfig;
   /** Abort signal to cancel the loop (checked per turn and before tool calls). */
   signal?: AbortSignal;
   /** Max retries for retryable provider errors (default: 0). */
@@ -132,6 +136,8 @@ async function runAgentLoopInternal(options: AgentLoopOptions): Promise<AgentLoo
   // Ensure tools are registered
   if (!toolsRegistered) {
     registerAllTools();
+    // Start configured MCP servers and register their tools.
+    void registerMcpServers(options.mcpConfig ?? loadConfig());
     toolsRegistered = true;
   }
 

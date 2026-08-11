@@ -55,7 +55,8 @@
     "ink-text-input": "^6.0.0",
     "open": "^10.1.2",
     "openai": "^5.12.2",
-    "react": "^18.3.1"
+    "react": "^18.3.1",
+    "super-kit": "github:vibecoder880/super-kit#main"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
