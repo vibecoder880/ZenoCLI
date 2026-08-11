@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ModelRegistry } from "./model-registry.js";
 import { SmartRouter } from "./smart-router.js";
-import { resolveModelRoute } from "./router.js";
+import { resolveMetadataModel, resolveModelRoute } from "./router.js";
 import type { ZenoConfig } from "../storage/config.js";
 
 const baseConfig = {
@@ -63,6 +63,18 @@ describe("resolveModelRoute auto (SmartRouter integration)", () => {
     const route = resolveModelRoute(baseConfig, "auto");
     expect(route.source).toBe("auto");
     expect(route.model).toBe("gpt-4o-mini");
+  });
+});
+
+describe("resolveMetadataModel", () => {
+  it("prefers the configured metadataModel", () => {
+    const config = { ...baseConfig, metadataModel: "openai/gpt-4.1-mini" } as unknown as ZenoConfig;
+    expect(resolveMetadataModel(config)).toBe("openai/gpt-4.1-mini");
+  });
+
+  it("falls back to the SmartRouter cost (economy) model", () => {
+    const config = { ...baseConfig } as unknown as ZenoConfig;
+    expect(resolveMetadataModel(config)).toBe("openai/gpt-4o-mini");
   });
 });
 

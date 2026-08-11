@@ -3,6 +3,23 @@ import { BudgetTracker } from "../core/budget-tracker.js";
 import { ModelRegistry } from "./model-registry.js";
 import { SmartRouter } from "./smart-router.js";
 
+/**
+ * The economy-tier model for low-stakes tasks (subagents, summaries).
+ * Prefers config.metadataModel, else the SmartRouter's cheapest model,
+ * else the default model.
+ */
+export function resolveMetadataModel(config: ZenoConfig): string {
+  const explicit = config.metadataModel;
+  if (explicit) {
+    return explicit;
+  }
+  try {
+    return new SmartRouter(new ModelRegistry()).route("cost").selected.id;
+  } catch {
+    return config.default.model;
+  }
+}
+
 export interface ProviderRoute {
   provider: string;
   model: string;

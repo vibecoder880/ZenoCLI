@@ -16,6 +16,7 @@ import { refreshOAuthIfNeeded } from "../../auth/refresh.js";
 import { createProvider } from "../../providers/index.js";
 import { selectUsableRoute } from "../../providers/router-fallback.js";
 import { loadConfig } from "../../storage/config.js";
+import { resolveMetadataModel } from "../../providers/router.js";
 import { installSigintAbort } from "../sigint.js";
 
 export interface ReviewOptions {
@@ -98,6 +99,7 @@ export async function runReviewCommand(options: ReviewOptions): Promise<void> {
   const result = await spawnTypedSubagent("reviewer", {
     task,
     provider,
+    model: resolveMetadataModel(config),
     cwd: options.cwd,
     signal,
   });

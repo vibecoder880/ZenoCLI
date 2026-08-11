@@ -34,6 +34,8 @@ export interface ZenoConfig {
     /** cost | quality | speed | balanced (default: balanced). */
     strategy?: "cost" | "quality" | "speed" | "balanced";
   };
+  /** Economy-tier model used for low-stakes subagent/summary tasks. */
+  metadataModel?: string;
   /** Spend budget with optional limits and auto-downgrade. */
   budget?: {
     /** Daily spend limit in USD (0 = unlimited). */
@@ -91,6 +93,7 @@ export const DEFAULT_CONFIG: ZenoConfig = {
   routing: {
     strategy: "balanced"
   },
+  metadataModel: "openai/gpt-4o-mini",
   budget: {
     dailyLimitUsd: 0,
     monthlyLimitUsd: 0,
@@ -153,6 +156,7 @@ function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
       ...(DEFAULT_CONFIG.routing ?? {}),
       ...(partial?.routing ?? {})
     },
+    metadataModel: partial?.metadataModel ?? DEFAULT_CONFIG.metadataModel,
     budget: {
       ...(DEFAULT_CONFIG.budget ?? {}),
       ...(partial?.budget ?? {})
