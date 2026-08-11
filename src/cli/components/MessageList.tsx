@@ -1,10 +1,16 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { DiffView } from "./DiffView.js";
 
 export interface ChatLine {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+/** True when content looks like a unified diff (hunk markers present). */
+function isUnifiedDiff(content: string): boolean {
+  return content.includes("@@") && /^diff --git|\+|-/m.test(content);
 }
 
 interface MessageBubbleProps {
@@ -32,7 +38,11 @@ function MessageBubble({ message }: MessageBubbleProps): React.JSX.Element {
         </Text>
       </Text>
       <Box marginLeft={2}>
-        <Text>{message.content}</Text>
+        {isUnifiedDiff(message.content) ? (
+          <DiffView content={message.content} />
+        ) : (
+          <Text>{message.content}</Text>
+        )}
       </Box>
     </Box>
   );
