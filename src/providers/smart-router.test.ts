@@ -56,7 +56,7 @@ describe("resolveModelRoute auto (SmartRouter integration)", () => {
 
     const route = resolveModelRoute(config, "auto");
     expect(route.provider).toBe("anthropic");
-    expect(route.model).toBe("claude-sonnet-4-0");
+    expect(route.model).toBe("claude-opus-4");
   });
 
   it("falls back to balanced when no routing config", () => {
@@ -69,9 +69,9 @@ describe("resolveModelRoute auto (SmartRouter integration)", () => {
 describe("ModelRegistry", () => {
   it("registers all default models", () => {
     const registry = new ModelRegistry();
-    expect(registry.getAll().length).toBeGreaterThanOrEqual(6);
-    expect(registry.getByProvider("openai").length).toBe(3);
-    expect(registry.getByTier("premium").length).toBe(3);
+    expect(registry.getAll().length).toBeGreaterThanOrEqual(8);
+    expect(registry.getByProvider("openai").length).toBe(4);
+    expect(registry.getByTier("premium").length).toBe(4);
   });
 
   it("looks up a model by id", () => {
