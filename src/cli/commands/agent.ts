@@ -4,6 +4,7 @@ import { refreshOAuthIfNeeded } from "../../auth/refresh.js";
 import { createProvider } from "../../providers/index.js";
 import { selectUsableRoute } from "../../providers/router-fallback.js";
 import { loadConfig } from "../../storage/config.js";
+import { installSigintAbort } from "../sigint.js";
 
 interface RunAgentOptions {
   task: string;
@@ -97,11 +98,4 @@ export async function runAgentCommand(options: RunAgentOptions): Promise<void> {
   if (options.nonInteractive && result.aborted) {
     process.exitCode = 130; // SIGINT convention
   }
-}
-
-/** Install a SIGINT → abort controller so Ctrl+C cancels the loop cleanly. */
-function installSigintAbort(): AbortSignal {
-  const controller = new AbortController();
-  process.once("SIGINT", () => controller.abort());
-  return controller.signal;
 }

@@ -45,13 +45,16 @@ program
   .option("-p, --provider <provider>", "Provider override")
   .option("--cwd <cwd>", "Working directory", process.cwd())
   .option("--no-stream", "Disable streaming output")
-  .action(async (prompt: string, options: { model?: string; provider?: string; cwd: string; stream?: boolean }) => {
+  .option("--non-interactive", "Run headless for CI/CD: plain stdout, no TTY decorations")
+  .option("--pipe", "Alias for --non-interactive (pipe-friendly output)")
+  .action(async (prompt: string, options: { model?: string; provider?: string; cwd: string; stream?: boolean; nonInteractive?: boolean; pipe?: boolean }) => {
     await runChatCommand({
       prompt,
       model: options.model,
       provider: options.provider,
       cwd: options.cwd,
-      stream: options.stream
+      stream: options.stream,
+      nonInteractive: Boolean(options.nonInteractive || options.pipe)
     });
   });
 
