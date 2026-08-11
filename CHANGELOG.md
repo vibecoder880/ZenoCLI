@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.4 - 2026-08-12
+
+### Features
+- Headless `zeno chat`: `--non-interactive` / `--pipe` prints plain stdout for CI/CD scripting (mirrors `zeno agent`)
+- New `zeno review [target]` command: runs the reviewer subagent over a file/dir or `--diff <ref>`, exit 1 when findings exist so it can gate a PR
+- Colorized diff viewer in the TUI: unified diffs render with +green / -red in message bubbles
+- Device Code Flow (RFC 8628) for OAuth login: `zeno auth login --method oauth --device` works in WSL/SSH/Docker/CI where localhost is unreachable
+- Economy-tier `metadataModel` (default `openai/gpt-4o-mini`) used for low-stakes subagent/review summaries to cut cost
+
+### Docs
+- README documents headless chat, code review, device flow, diff viewer, and metadata model
+- Architecture doc covers device-code, review command, DiffView, and metadata model
+
 ## 0.7.3 - 2026-08-12
 
 ### Features

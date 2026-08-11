@@ -34,7 +34,12 @@ OAuth login is also supported:
 ```bash
 zeno auth login google --method oauth
 zeno auth login openai --method oauth --manual-code
+zeno auth login google --method oauth --device   # headless: WSL/SSH/Docker/CI
 ```
+
+`--device` uses Device Code Flow (RFC 8628) for environments where a browser
+cannot reach the localhost callback: it shows a verification URL + code to
+enter on another device, then polls until authorized.
 
 OAuth environment variables:
 
@@ -159,6 +164,29 @@ node dist/index.js agent "Apply the refactor" --pipe --max-turns 20 --retries 3
 provider errors (rate limits / 5xx) with exponential backoff. Interactive mode is
 unchanged. Runs can be cancelled with `Ctrl+C` (SIGINT) which aborts the loop cleanly.
 
+Run a one-shot chat in headless mode (same plain-output contract as agent):
+
+```bash
+node dist/index.js chat "Summarize this file" --non-interactive
+node dist/index.js chat "Fix this bug" --pipe
+```
+
+`--pipe` is an alias for `--non-interactive`. Chat headless prints only the
+response text to stdout and routes errors to stderr; a cancelled run exits
+non-zero.
+
+Run a code review over a target or a git diff (exit 1 when findings exist, so
+it can gate CI):
+
+```bash
+node dist/index.js review src/core/context-manager.ts
+node dist/index.js review --diff HEAD~1 --non-interactive
+node dist/index.js review --pipe --diff origin/main...HEAD
+```
+
+`--diff <ref>` reviews the files changed vs a git ref. The reviewer subagent
+uses an economy-tier metadata model by default.
+
 Show recent history and tracked token usage:
 
 ```bash
@@ -221,6 +249,13 @@ picks the best model by strategy — `cost` / `quality` / `speed` / `balanced`
 ```toml
 [routing]
 strategy = "balanced"   # cost | quality | speed | balanced
+```
+
+Low-stakes tasks (subagent summaries, reviews) use an economy-tier
+`metadataModel` by default so non-critical calls stay cheap:
+
+```toml
+metadataModel = "openai/gpt-4o-mini"
 ```
 
 ### Budget tracking

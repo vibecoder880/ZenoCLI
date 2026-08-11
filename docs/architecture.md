@@ -102,13 +102,14 @@ Agent Loop (orchestrator)
 
 ### Auth (`src/auth/`)
 - **auth-profiles.ts** — API key + OAuth profiles (`~/.zenocli/auth-profiles.json`); profiles typed api_key|oauth|token, active-profile selection, expiry detection
-- **oauth.ts** + **oauth-server.ts** — OAuth login flow (browser + local callback server on 127.0.0.1:9876, or `--manual-code`), refresh-token grant via `zeno auth refresh`
+- **oauth.ts** + **oauth-server.ts** — OAuth login flow (browser + local callback server on 127.0.0.1:9876, or `--manual-code`), refresh-token grant via `zeno auth refresh`; PKCE S256 + auto-refresh
+- **device-code.ts** — Device Code Flow (RFC 8628) for headless login (`zeno auth login --method oauth --device`)
 
 ### CLI (`src/cli/`)
 - **tui.tsx** — Ink/React TUI với welcome banner, sticky header/footer, multi-line input
 - **slash-commands.ts** — Slash command definitions với category grouping
-- **commands/** — Individual CLI commands
-- **components/** — Header, MessageList, AgentStatus, Prompt, SlashMenu, Footer, WelcomeBanner
+- **commands/** — Individual CLI commands: chat/agent support `--non-interactive`/`--pipe` headless output; `review` runs the reviewer subagent over a target or git diff
+- **components/** — Header, MessageList, AgentStatus, Prompt, SlashMenu, Footer, WelcomeBanner; `DiffView` colors unified diffs (+green/-red) in message bubbles
 - **hooks/** — useMultiLineInput, useFirstRun
 
 ### Providers (`src/providers/`)
