@@ -16,6 +16,7 @@ import { estimateCostUsd } from "../providers/pricing.js";
 import { selectUsableRoute } from "../providers/router-fallback.js";
 import { filterSlashCommands, findSlashCommand, markSlashCommandUsed, SLASH_COMMANDS } from "./slash-commands.js";
 import { ModelsDialog, setActiveModel } from "./components/ModelsDialog.js";
+import { resolveTheme, ThemeProvider } from "./theme.js";
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
 import { getConfigPathname, loadConfig } from "../storage/config.js";
@@ -709,7 +710,9 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
   const showWelcome = screen === "welcome" && firstRun.isFirstRun;
 
+  const palette = resolveTheme(config);
   return (
+    <ThemeProvider palette={palette}>
     <Box flexDirection="column">
       <Header
         model={activeRoute.model}
@@ -768,6 +771,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       />
       <Footer isBusy={isBusy} isMultiLine={input.includes("\n")} />
     </Box>
+    </ThemeProvider>
   );
 }
 

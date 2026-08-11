@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import { createRequire } from "node:module";
+import { useTheme } from "../theme.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -34,20 +35,21 @@ export function Header({
   permissionMode,
   sessionCost
 }: HeaderProps): React.JSX.Element {
+  const theme = useTheme();
   return (
     <Box
       borderStyle="round"
-      borderColor="cyan"
+      borderColor={theme.primary}
       paddingX={1}
       flexDirection="column"
     >
       <Box>
-        <Text bold color="cyan">
+        <Text bold color={theme.primary}>
           ZenoCLI
         </Text>
         <Text dimColor> · v{VERSION}</Text>
       </Box>
-      <Text color="green">
+      <Text color={theme.success}>
         {provider}/{model}
       </Text>
       <Text dimColor>

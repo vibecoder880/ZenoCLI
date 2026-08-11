@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { useTheme } from "../theme.js";
 
 const ASCII_LOGO = `███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗
 ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗
@@ -24,25 +25,26 @@ export function WelcomeBanner({
   onDismiss
 }: WelcomeBannerProps): React.JSX.Element {
   const hasMissing = missingProviders.length > 0;
+  const theme = useTheme();
 
   return (
     <Box
       borderStyle="round"
-      borderColor={hasMissing ? "yellow" : "cyan"}
+      borderColor={hasMissing ? theme.warning : theme.primary}
       paddingX={1}
       flexDirection="column"
       marginTop={1}
     >
-      <Text color="cyan">{ASCII_LOGO}</Text>
+      <Text color={theme.primary}>{ASCII_LOGO}</Text>
       <Box marginTop={1}>
         <Text dimColor>v{version} · </Text>
-        <Text color="green">{cwd}</Text>
+        <Text color={theme.success}>{cwd}</Text>
       </Box>
 
       <Box marginTop={1} flexDirection="column">
         <Text bold>Providers</Text>
         {providers.map((provider) => (
-          <Text key={provider.slug} color={provider.status === "ok" ? "green" : "red"}>
+          <Text key={provider.slug} color={provider.status === "ok" ? theme.success : "red"}>
             {provider.status === "ok" ? "✓" : "✗"} {provider.slug}
             {provider.status === "ok" ? " (authenticated)" : " (no auth)"}
           </Text>
@@ -51,7 +53,7 @@ export function WelcomeBanner({
 
       {hasMissing ? (
         <Box marginTop={1} flexDirection="column">
-          <Text color="yellow">⚠ Missing auth for: {missingProviders.join(", ")}</Text>
+          <Text color={theme.warning}>⚠ Missing auth for: {missingProviders.join(", ")}</Text>
           <Text dimColor>Run: zeno auth {missingProviders[0]}</Text>
         </Box>
       ) : null}

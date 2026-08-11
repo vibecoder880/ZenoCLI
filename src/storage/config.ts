@@ -47,6 +47,18 @@ export interface ZenoConfig {
     /** Optional model override for this command. */
     model?: string;
   }>;
+  /** TUI theme. */
+  theme?: {
+    /** dark (default) or light. */
+    mode?: "dark" | "light";
+    /** Optional color overrides (Ink color names). */
+    palette?: {
+      primary?: string;
+      success?: string;
+      warning?: string;
+      muted?: string;
+    };
+  };
   /** Economy-tier model used for low-stakes subagent/summary tasks. */
   metadataModel?: string;
   /** Spend budget with optional limits and auto-downgrade. */
@@ -115,6 +127,9 @@ export const DEFAULT_CONFIG: ZenoConfig = {
   },
   metadataModel: "openai/gpt-4o-mini",
   commands: {},
+  theme: {
+    mode: "dark"
+  },
   budget: {
     dailyLimitUsd: 0,
     monthlyLimitUsd: 0,
@@ -201,6 +216,14 @@ function mergeConfig(partial: Partial<ZenoConfig> | undefined): ZenoConfig {
     commands: {
       ...(DEFAULT_CONFIG.commands ?? {}),
       ...(partial?.commands ?? {})
+    },
+    theme: {
+      ...(DEFAULT_CONFIG.theme ?? {}),
+      ...(partial?.theme ?? {}),
+      palette: {
+        ...(DEFAULT_CONFIG.theme?.palette ?? {}),
+        ...(partial?.theme?.palette ?? {})
+      }
     },
     budget: {
       ...(DEFAULT_CONFIG.budget ?? {}),
