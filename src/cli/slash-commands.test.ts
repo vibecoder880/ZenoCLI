@@ -28,11 +28,11 @@ describe("filterSlashCommands", () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
-  it("filters commands by substring", () => {
+  it("filters commands by substring (category-ordered)", () => {
     expect(filterSlashCommands("/mo")).toEqual([
-      { command: "/model", description: "Switch active model", category: "info" },
+      { command: "/memory", description: "Show auto-memory", category: "session" },
       { command: "/models", description: "List aliases and models", category: "debug" },
-      { command: "/memory", description: "Show auto-memory", category: "session" }
+      { command: "/model", description: "Switch active model", category: "info" }
     ]);
   });
 
