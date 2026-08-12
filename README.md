@@ -1,109 +1,101 @@
 # ZenoCLI
 
-ZenoCLI is a terminal coding assistant focused on a clean CLI, multiple model providers, local auth profile storage, and a pragmatic path to agentic workflows.
+> **A professional, multi-provider terminal coding agent** — Claude Code class power, open source, and 75+ LLM providers.
 
-## What it is
+ZenoCLI is a terminal coding agent with an interactive Ink TUI, a local
+tool-using agent loop, smart multi-provider routing, budget tracking, code
+review, MCP server support, and lifecycle hooks. It runs on Node.js 22+ for
+Windows, Linux, and macOS.
 
-ZenoCLI is a professional, multi-provider terminal coding agent with:
+```
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ ZenoCLI · v0.7.7                                                            │
+│ anthropic/claude-sonnet-4-0                                                  │
+│ session abc123 · agent · 🔒 Default (prompt for writes) · $0.0012 · 1.2k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
-- **Interactive Ink TUI** — sticky header, welcome banner, slash palette,
-  theme system (dark/light/custom), colorized diff viewer, agent status stream
-- **One-shot chat** and a **local tool-using agent loop** with streaming events,
-  context compaction, mid-turn corrections, and headless CI mode
-- **75+ LLM providers** — OpenAI, Anthropic, Google, plus any OpenAI-compatible
-  endpoint (OpenRouter, xAI, Azure, Groq, local Ollama) from `config.toml`
-- **Smart model routing** — cost / quality / speed / balanced strategies with
-  optional budget limits and auto-downgrade
-- **Local auth** — encrypted API-key profiles, PKCE OAuth, auto-refresh, and
-  Device Code Flow for headless environments
-- **Code review** — `zeno review` gates PRs by severity
-- **Lifecycle hooks** — 7 events (claude-code parity), **custom slash
-  commands**, and **MCP server** support
-- **Release packaging** for Windows, Linux, and macOS via GitHub Actions
+> Refactor the parser to use async iterators.
+→ run_command ✓ 18 tests passed
+✎ edit_file  +124 −38
 
-## Requirements
+  @@ -142,7 +142,8 @@
+  -  const items: string[] = [];
+  +  for await (const chunk of stream) { ... }
 
-- Node.js 22+
-- One of these credentials:
-  - `OPENAI_API_KEY`
-  - `ANTHROPIC_API_KEY`
-  - `GOOGLE_API_KEY`
-
-You can also save credentials locally:
-
-```bash
-zeno auth login openai --method api-key
-zeno auth login anthropic --method api-key
-zeno auth login google --method api-key
-zeno auth status
-zeno auth refresh google
+✓ Refactored parser to async iterators. (Turns: 4 · Tokens: 1,240)
 ```
 
-OAuth login is also supported:
+See [the full TUI layout](#giao-dien-tui) below.
+
+## Table of contents
+
+- [Features](#features)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Giao diện TUI](#giao-dien-tui)
+- [CLI commands](#cli-commands)
+- [Configuration](#configuration)
+- [Providers & routing](#providers--routing)
+- [Auth](#auth)
+- [MCP servers](#mcp-servers)
+- [Hooks](#hooks)
+- [Development](#development)
+- [Releases](#releases)
+
+## Features
+
+| Area | What you get |
+|------|-------------|
+| **TUI** | Ink-based interface with sticky header, welcome banner, slash palette, theme system (dark/light/custom), colorized diff viewer, live agent stream |
+| **Providers** | OpenAI, Anthropic, Google + any OpenAI-compatible endpoint (OpenRouter, xAI, Azure, Groq, local Ollama) — 75+ from `config.toml` |
+| **Agent loop** | Streaming events, context compaction, mid-turn corrections, AbortSignal cancellation, bounded retry |
+| **Smart routing** | `--model auto` by cost / quality / speed / balanced, with budget limits + auto-downgrade |
+| **Chat & review** | One-shot chat, headless CI mode, and `zeno review` that gates PRs by severity |
+| **Auth** | Encrypted API-key profiles, PKCE OAuth, auto-refresh, Device Code Flow for headless |
+| **Extensibility** | 7 lifecycle hooks (claude-code parity), custom slash commands, MCP servers |
+| **Multi-agent** | Subagents with isolated context, code review, team/task coordination |
+
+## Install
 
 ```bash
-zeno auth login google --method oauth
-zeno auth login openai --method oauth --manual-code
-zeno auth login google --method oauth --device   # headless: WSL/SSH/Docker/CI
-```
-
-`--device` uses Device Code Flow (RFC 8628) for environments where a browser
-cannot reach the localhost callback: it shows a verification URL + code to
-enter on another device, then polls until authorized.
-
-OAuth environment variables:
-
-```bash
-GOOGLE_OAUTH_CLIENT_ID=...
-GOOGLE_OAUTH_CLIENT_SECRET=...
-GOOGLE_OAUTH_REDIRECT_URI=http://127.0.0.1:9876/callback
-
-OPENAI_OAUTH_AUTH_URL=...
-OPENAI_OAUTH_TOKEN_URL=...
-OPENAI_OAUTH_CLIENT_ID=...
-OPENAI_OAUTH_CLIENT_SECRET=...
-OPENAI_OAUTH_REDIRECT_URI=http://127.0.0.1:9876/callback
-```
-
-Profiles are stored in `~/.zenocli/auth-profiles.json`. Config is stored in `~/.zenocli/config.toml`.
-
-## Install and run
-
-```bash
+# from source
 npm install
 npm run build
 node dist/index.js --help
-```
 
-Install globally from npm after publish:
-
-```bash
+# global (after npm publish)
 npm install -g zeno-cli
 zeno --help
-zeno version
 ```
 
-Run the TUI:
+## Quick start
 
 ```bash
-npm run dev
+# Interactive TUI
+zeno                # or `npm run dev`
+
+# One-shot chat
+zeno chat "Explain this repository"
+
+# Agent loop (tool-using, context-aware)
+zeno agent "Run the test suite and fix failures" --max-turns 12
+
+# Headless for CI/CD
+zeno agent "Fix the failing tests" --non-interactive
+zeno chat "Summarize this file" --pipe
+
+# Code review (exit 1 when findings exist — gates PRs)
+zeno review src/core/context-manager.ts
+zeno review --diff HEAD~1 --non-interactive
 ```
 
-## Interactive TUI
+## Giao diện TUI
 
-Run `zeno` (no subcommand) to open the interactive TUI. It features:
+Run `zeno` (no subcommand) to open the interactive TUI.
 
-- **Sticky header** (3 lines): logo + version, provider/model, then `session · mode · permission · cost · tokens · history`
-- **Welcome banner** on first run (auto-dismisses on first prompt) with ASCII logo, cwd, and auth status per provider
-- **Footer keybinding hints** (`Esc`, `/`, `Shift+Tab`, `Shift+Enter`, `↑↓`) with a busy indicator
-- **Chat and agent modes**: chat streams a response; agent runs the local tool-using loop with live tool events, compacted context, and an interrupt (`Esc`)
-- **Multi-line input**: `Enter` submits, `Shift+Enter` (or `Ctrl+Enter`) inserts a newline
-- **Slash palette** grouped by category (Mode / Session / Debug / Info) with scroll highlight; filter is the substring after `/`, case-insensitive
-- **Color-coded messages**: user=cyan, assistant=green, system=dim, error=red
+**First run** (no auth yet) shows the welcome banner:
 
-Example layout (first-run, no auth yet):
-
-```
+```text
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ ZenoCLI · v0.7.7                                                            │
 │ openai/gpt-4.1-mini                                                          │
@@ -129,7 +121,8 @@ Example layout (first-run, no auth yet):
 │ ⚠ Missing auth for: openai, anthropic, google                                │
 │ Run: zeno auth openai                                                       │
 │                                                                              │
-│ Type a prompt to begin. Try /help for commands.                              │
+│ Type a prompt to begin. Try /help for commands. Banner dismisses on first    │
+│ prompt.                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
@@ -145,172 +138,117 @@ Example layout (first-run, no auth yet):
  Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
 ```
 
-Debug/deployment/agent view looks like this — status line, live tool stream, and
-a colorized diff after a file edit (theme-aware):
+**Everyday use** — header shows session/mode/permission/cost, messages are
+color-coded (user cyan, assistant green, system dim), the agent stream prints
+live tool events, and file edits render as a colorized diff:
 
-```
+```text
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.7.7                     anthropic/claude-sonnet-4-0             │
-│ session abc123 · agent · Default · $0.0012 · 1,240 tok · 2 hist              │
+│ ZenoCLI · v0.7.7                                                            │
+│ anthropic/claude-sonnet-4-0                                                  │
+│ session abc123 · agent · 🔒 Default (prompt for writes) · $0.0012 · 1.2k tok │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-  > Refactor the parser to use async iterators.
-  ↘ run_command(npx vitest run src/parser)     ✓ 18 tests passed
-  ✎ edit_file(parser.ts)                        ✓ 124 insertions, 38 deletions
+▸ You
+  Refactor the parser to use async iterators.
+
+◆ Assistant
+  ✎ edit_file(parser.ts)   ✓ 124 insertions, 38 deletions
 
   @@ -142,7 +142,8 @@
   -  const items: string[] = [];
-  +  const items: string[] = [];
   +  for await (const chunk of stream) { ... }
 
   ✓ Refactored parser to async iterators.
   Turns: 4 | Tokens: 1,240 | Tools: run_command, edit_file, read_file
+
+> Ask ZenoCLI to help (agent mode)
+
+ Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
 ```
 
-Type a prompt and press `Enter` to send it. Press `/` to browse slash commands (use `↑`/`↓` to navigate, `Tab` to fill, `Enter` to run). Press `Esc` to exit.
+**Keybindings:**
 
-See `docs/screenshots/tui-welcome.txt` for a captured TUI frame.
+| Key | Action |
+|-----|--------|
+| `Enter` | Submit |
+| `Shift+Enter` / `Ctrl+Enter` | Newline |
+| `/` | Open slash palette |
+| `↑` / `↓` | Navigate (palette / history) |
+| `Tab` | Fill highlighted command |
+| `Shift+Tab` | Cycle permission mode |
+| `Esc` | Exit / interrupt busy agent |
 
-Run a one-shot chat:
+**Slash commands** are grouped by category: Mode (`/chat`, `/agent`,
+`/permission`, `/exit`), Session (`/clear`, `/memory`, `/resume`, `/fork`,
+`/undo`), Debug (`/cost`, `/health`, `/models`, `/context`, `/compact`), Info
+(`/help`, `/init`, `/model`, `/auth`, `/history`, `/config`, `/version`). The
+palette floats recently-used commands first.
 
-```bash
-node dist/index.js chat "Explain this repository"
-```
+## CLI commands
 
-Run the agent loop (defaults to `--max-turns 8`):
+| Command | Description |
+|---------|-------------|
+| `zeno` | Launch the interactive TUI |
+| `zeno chat "<prompt>"` | One-shot chat (`--non-interactive`/`--pipe` for CI) |
+| `zeno agent "<task>"` | Tool-using agent loop (`--max-turns`, `--retries`, headless flags) |
+| `zeno review [target]` | Code review by target or `--diff <ref>` (exit 1 = findings) |
+| `zeno auth` | Login / list / switch / status / health / refresh, OAuth + device flow |
+| `zeno mcp` | List configured MCP servers; `--verify <name>` shows tools |
+| `zeno history` | list / show / clear |
+| `zeno cost` | Token usage + budget status (today/month, remaining, alerts) |
+| `zeno models` | List providers, aliases, and models |
+| `zeno config` | show / set (`set default.model openai/gpt-4.1`) |
+| `zeno context` | show / init / set (project `ZENO.md`) |
+| `zeno doctor` | Inspect runtime, config, credentials |
+| `zeno init` | Bootstrap a workspace |
+| `zeno health` | Provider health check |
+| `zeno version` | Print version |
 
-```bash
-node dist/index.js agent "Inspect the project and summarize the highest-risk gaps"
-node dist/index.js agent "Run the test suite and fix failures" --max-turns 12
-```
+## Configuration
 
-Headless / CI mode — plain machine-readable output, no TTY decorations, prints the
-final result to stdout and surfaces errors to stderr; a cancelled run exits `130`:
-
-```bash
-node dist/index.js agent "Fix the failing tests in src/core" --non-interactive
-node dist/index.js agent "Apply the refactor" --pipe --max-turns 20 --retries 3
-```
-
-`--pipe` is an alias for `--non-interactive`. `--retries <n>` retries retryable
-provider errors (rate limits / 5xx) with exponential backoff. Interactive mode is
-unchanged. Runs can be cancelled with `Ctrl+C` (SIGINT) which aborts the loop cleanly.
-
-Run a one-shot chat in headless mode (same plain-output contract as agent):
-
-```bash
-node dist/index.js chat "Summarize this file" --non-interactive
-node dist/index.js chat "Fix this bug" --pipe
-```
-
-`--pipe` is an alias for `--non-interactive`. Chat headless prints only the
-response text to stdout and routes errors to stderr; a cancelled run exits
-non-zero.
-
-Run a code review over a target or a git diff (exit 1 when findings exist, so
-it can gate CI):
-
-```bash
-node dist/index.js review src/core/context-manager.ts
-node dist/index.js review --diff HEAD~1 --non-interactive
-node dist/index.js review --pipe --diff origin/main...HEAD
-```
-
-`--diff <ref>` reviews the files changed vs a git ref. The reviewer subagent
-uses an economy-tier metadata model by default.
-
-Manage MCP servers — list what's configured, or verify one starts and shows
-its tools:
-
-```bash
-node dist/index.js mcp                    # list [mcp.servers]
-node dist/index.js mcp --verify filesystem  # start + list tools
-```
-
-MCP servers declared in `config.toml` are started when the agent loop runs;
-their tools are available to the agent as `mcp__<server>__<tool>`:
+All user state lives under `~/.zenocli/`. The main file is `config.toml`:
 
 ```toml
-[mcp.servers.filesystem]
-command = "npx"
-args = ["tsx", "node_modules/super-kit/core/mcp-servers/filesystem/server.ts"]
-```
+[default]
+model = "openai/gpt-4.1-mini"
+provider = "openai"
+streaming = true
 
-Show recent history and tracked token usage:
+[aliases]
+fast = "openai/gpt-4.1-mini"
+smart = "anthropic/claude-sonnet-4-0"
+cheap = "google/gemini-2.5-flash"
 
-```bash
-node dist/index.js history list --limit 10
-node dist/index.js history show <entry-id>
-node dist/index.js history clear
-node dist/index.js cost
-```
+[context]
+maxTokens = 100_000
+ignore = ["node_modules", ".git", "dist"]
 
-Show or update config:
+[permission]
+mode = "default"        # default | acceptEdits | plan | auto | dontAsk | bypassPermissions
 
-```bash
-node dist/index.js config show
-node dist/index.js config set default.model openai/gpt-4.1
-node dist/index.js config set aliases.review anthropic/claude-sonnet-4-0
-```
-
-Manage project context:
-
-```bash
-node dist/index.js context init
-node dist/index.js context show
-node dist/index.js context set "# ZENO.md\nPrioritize src first."
-```
-
-Run diagnostics:
-
-```bash
-node dist/index.js doctor
-```
-
-Bootstrap a workspace:
-
-```bash
-node dist/index.js init
-```
-
-## Model routing
-
-Default aliases live in `~/.zenocli/config.toml`:
-
-- `fast` -> `openai/gpt-4.1-mini`
-- `smart` -> `anthropic/claude-sonnet-4-0`
-- `cheap` -> `google/gemini-2.5-flash`
-
-Examples:
-
-```bash
-node dist/index.js chat "Hello" --model fast
-node dist/index.js chat "Review this code" --model claude-sonnet-4-0
-node dist/index.js chat "Summarize this file" --model google/gemini-2.5-pro
-```
-
-### Smart routing (`--model auto`)
-
-`zeno ... --model auto` routes through a Super Kit-inspired smart router that
-picks the best model by strategy — `cost` / `quality` / `speed` / `balanced`
-(default `balanced`). Configure the strategy in `~/.zenocli/config.toml`:
-
-```toml
 [routing]
-strategy = "balanced"   # cost | quality | speed | balanced
+strategy = "balanced"   # cost | quality | speed | balanced — for `--model auto`
+
+metadataModel = "openai/gpt-4o-mini"   # economy model for low-stakes summaries
+
+[theme]
+mode = "dark"           # dark | light
+[theme.palette]
+primary = "magenta"     # optional color overrides (Ink color names)
+
+[budget]
+dailyLimitUsd = 2.0
+monthlyLimitUsd = 50.0
+alertThreshold = 0.8
+autoDowngrade = true
 ```
 
-Low-stakes tasks (subagent summaries, reviews) use an economy-tier
-`metadataModel` by default so non-critical calls stay cheap:
+## Providers & routing
 
-```toml
-metadataModel = "openai/gpt-4o-mini"
-```
+### OpenAI-compatible providers (75+)
 
-### OpenAI-compatible providers
-
-Any endpoint speaking the OpenAI wire format can be added to `config.toml` —
-OpenRouter, xAI, Azure, Groq, local Ollama, and hundreds more — without code:
+Any endpoint speaking the OpenAI wire format works from config — no code:
 
 ```toml
 [providers.openrouter]
@@ -322,16 +260,78 @@ apiKeyEnv = "OPENROUTER_API_KEY"
 [providers.ollama]
 type = "openai-compatible"
 name = "Ollama (local)"
-baseURL = "http://localhost:11434/v1"   # no apiKey needed for local servers
+baseURL = "http://localhost:11434/v1"   # local servers can omit the API key
 ```
 
-Then use it with `zeno chat "..." --provider openrouter --model <model-id>`.
-The API key is read from `apiKeyEnv`; local servers can omit it.
+```bash
+zeno chat "..." --provider openrouter --model <model-id>
+```
 
-### Custom slash commands
+### Smart routing
 
-Define your own `/command`s in `config.toml` that send a prompt template —
-perfect for frequent, reusable instructions:
+`--model auto` routes through a Super Kit-inspired smart router that picks the
+best model by strategy — `cost` / `quality` / `speed` / `balanced` (default
+`balanced`). Under budget pressure it auto-downgrades to `cost`. Low-stakes
+tasks use the economy `metadataModel`.
+
+## Auth
+
+```bash
+# API keys (encrypted at rest)
+zeno auth login openai --method api-key
+zeno auth status
+zeno auth health          # validate stored credentials, exit 1 if unhealthy
+
+# OAuth (browser + localhost callback, PKCE S256, auto-refresh)
+zeno auth login google --method oauth
+zeno auth login openai --method oauth --manual-code
+
+# Device Code Flow (WSL/SSH/Docker/CI where localhost is unreachable)
+zeno auth login google --method oauth --device
+```
+
+Secrets are encrypted with AES-256-GCM and a machine-local key; profiles live
+in `~/.zenocli/auth-profiles.json`.
+
+OAuth env vars: `GOOGLE_OAUTH_CLIENT_ID`/`_SECRET`/`_REDIRECT_URI` and
+`OPENAI_OAUTH_AUTH_URL`/`_TOKEN_URL`/`_CLIENT_ID`/`_CLIENT_SECRET`/`_REDIRECT_URI`.
+
+## MCP servers
+
+Servers declared in `[mcp.servers]` are started when the agent runs; their
+tools become callable as `mcp__<server>__<tool>`:
+
+```toml
+[mcp.servers.filesystem]
+command = "npx"
+args = ["tsx", "node_modules/super-kit/core/mcp-servers/filesystem/server.ts"]
+```
+
+```bash
+zeno mcp                      # list configured servers
+zeno mcp --verify filesystem  # start it and show its tools
+```
+
+super-kit ships 5 MCP servers you can point at: filesystem, git, database,
+browser, and vietnam (Zalo messaging + Vietnamese NLP).
+
+## Hooks
+
+The agent fires 7 lifecycle events (claude-code parity): `PreToolUse`,
+`PostToolUse`, `SessionStart`, `SessionEnd`, `Notification`, `Stop`,
+`SubagentStop`. Each can run a shell command or inject a prompt:
+
+```toml
+[hooks.Stop]
+command = "echo 'agent finished'"
+
+[hooks.SubagentStop]
+command = "node scripts/notify.mjs"
+```
+
+## Custom slash commands
+
+Define reusable `/command`s that send a prompt template:
 
 ```toml
 [commands.refactor]
@@ -341,100 +341,33 @@ prompt = "Refactor the current file for clarity, keeping behavior identical."
 prompt = "Summarize the last 10 commits into a changelog entry."
 ```
 
-Type `/refactor` (or `/refactor with these notes`) in the TUI to run it.
+Type `/refactor` (or `/refactor with notes`) in the TUI to run it.
 
-### Lifecycle hooks
-
-The agent fires 7 lifecycle events (matching Claude Code): `PreToolUse`,
-`PostToolUse`, `SessionStart`, `SessionEnd`, `Notification`, `Stop`, and
-`SubagentStop`. Configure shell/prompt hooks:
-
-```toml
-[hooks.Stop]
-command = "echo 'agent finished'"
-```
-
-### TUI theme
-
-Switch the TUI color theme or override individual colors:
-
-```toml
-[theme]
-mode = "dark"                  # dark (default) | light
-
-[theme.palette]
-primary = "magenta"            # optional per-key overrides
-success = "green"
-warning = "yellowBright"
-muted = "gray"
-```
-
-### Budget tracking
-
-Optional daily/monthly spend limits with automatic downgrade to the cost
-strategy when the budget is nearly used:
-
-```toml
-[budget]
-dailyLimitUsd = 2.0
-monthlyLimitUsd = 50.0
-alertThreshold = 0.8      # alert at 80% of budget
-autoDowngrade = true      # route to cheap models when near the limit
-```
-
-`zeno cost` shows today's and the month's spend, remaining budget, and any
-budget alert.
-
-## Project instructions
-
-If a project contains `ZENO.md` in the working directory, ZenoCLI injects that file as project-specific guidance for chat and agent requests.
-
-## History and usage
-
-ZenoCLI stores local chat history in `~/.zenocli/history.json`.
-
-- `history` shows recent entries
-- `history show <id>` prints a full stored exchange
-- `history clear` removes stored exchanges
-- `cost` shows total tracked tokens
-- TUI slash commands are grouped by category: Mode (`/chat`, `/agent`, `/permission`, `/exit`), Session (`/clear`, `/memory`, `/resume`, `/fork`, `/undo`), Debug (`/cost`, `/health`, `/models`, `/context`, `/compact`), and Info (`/help`, `/init`, `/model`, `/auth`, `/history`, `/config`, `/version`)
-
-## Verification
+## Development
 
 ```bash
-npm run test
-npm run typecheck
-npm run lint
-npm run build
-```
-
-Detailed verification matrix:
-
-- See [docs/verification-checklist.md](./docs/verification-checklist.md)
-
-## Releases
-
-The workflow at `.github/workflows/release.yml` builds and verifies the project on:
-
-- Windows
-- Linux
-- macOS
-
-When you push a tag like `v0.7.1`, GitHub Actions will:
-
-1. install dependencies
-2. run tests, lint, and build
-3. package the app for each platform
-4. publish release assets on GitHub with changelog-based notes
-5. publish `zeno-cli` to npm if `NPM_TOKEN` is configured in repository secrets
-
-You can also run the packaging step locally:
-
-```bash
-npm run release:package
+npm run dev          # interactive TUI via tsx (no build)
+npm run build        # tsc -> dist/
+npm run typecheck    # tsc --noEmit
+npm run test         # vitest (all tests)
+npm run lint         # eslint
 npm run release:verify
 ```
 
-Continuous verification for pushes and pull requests runs in:
+Tests are colocated as `*.test.ts` beside their source; Ink components use
+`ink-testing-library`.
 
-- [.github/workflows/ci.yml](./.github/workflows/ci.yml)
+## Releases
+
+Pushing a `v*` tag triggers `.github/workflows/release.yml`, which verifies,
+packages, and publishes linux / windows / macOS archives with changelog-based
+notes, plus npm if `NPM_TOKEN` is set.
+
+```bash
+npm run release:package   # local packaging into release/
+npm run release:verify    # test + typecheck + lint + build + pack --dry-run
+```
+
+---
+
+**License:** MIT · **Author:** qkhalk · **Home:** https://github.com/vibecoder880/ZenoCLI

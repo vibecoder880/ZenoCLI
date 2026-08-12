@@ -1,7 +1,7 @@
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.2.0                                                            │
+│ ZenoCLI · v0.7.7                                                            │
 │ openai/gpt-4.1-mini                                                          │
-│ session loading · chat · 🔒 Default (prompt for writes) · $0.0000 · 0 tok ·  │
+│ session abc123 · chat · 🔒 Default (prompt for writes) · $0.0000 · 0 tok ·   │
 │ 0 hist                                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -13,7 +13,7 @@
 │ ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝                                 │
 │ ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝                                  │
 │                                                                              │
-│ v0.2.0 · D:\VibeCoder\ZenoCLI                                               │
+│ v0.7.7 · /path/to/project                                                    │
 │                                                                              │
 │ Providers                                                                    │
 │ ✗ openai (no auth)                                                           │
@@ -37,4 +37,4 @@
 
 > Ask ZenoCLI to help (chat mode)
 
- Esc exi · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
+ Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
