@@ -28,6 +28,24 @@ const platform = resolvePlatform();
 const artifactBase = `${packageName}-${version}-${platform}`;
 const artifactDir = path.join(releaseRoot, artifactBase);
 
+/** Pack an npm-installable tarball named <pkg>.tgz (used by the release URL). */
+function packNpmTarball(target) {
+  const result = spawnSync("npm", ["pack", "--pack-destination", target], {
+    stdio: "inherit",
+    shell: process.platform === "win32"
+  });
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+  const produced = path.join(
+    target,
+    `${packageName}-${version.replace(/^v/, "")}.tgz`
+  );
+  const renamed = path.join(target, `${packageName}.tgz`);
+  fs.renameSync(produced, renamed);
+  return renamed;
+}
+
 await fsp.rm(releaseRoot, { recursive: true, force: true });
 await fsp.mkdir(stagingRoot, { recursive: true });
 await fsp.mkdir(artifactDir, { recursive: true });
@@ -93,6 +111,15 @@ if (process.platform === "win32") {
   }
 }
 
+// The npm-installable tarball is platform-independent; pack it from the root
+// so the release can be installed with:
+//   npm install -g https://github.com/vibecoder880/ZenoCLI/releases/latest/download/zeno-cli.tgz
+// Only the linux job produces it to avoid duplicate assets across the matrix.
+if (platform === "linux-x64") {
+  packNpmTarball(releaseRoot);
+}
+
 await fsp.rm(stagingRoot, { recursive: true, force: true });
 
 console.log(`Release package created for ${platform} in ${releaseRoot}`);
+console.log(`npm tarball: ${path.join(releaseRoot, `${packageName}.tgz`)}`);

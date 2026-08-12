@@ -49,6 +49,7 @@ jobs:
           path: |
             release/*.tar.gz
             release/*.zip
+            release/*.tgz
 
   publish:
     if: startsWith(github.ref, 'refs/tags/')
