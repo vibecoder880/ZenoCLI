@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.8 - 2026-08-12
 
 ### Features
 - Installers: `install.sh` (macOS/Linux/WSL) and `install.ps1` (Windows) download the matching per-OS release asset and put `zeno` on your PATH; configurable via `ZENO_VERSION` / `ZENO_PREFIX` / `ZENO_REPO`

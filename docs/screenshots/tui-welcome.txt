@@ -1,4 +1,4 @@
- ZenoCLI v0.7.7 · openai/gpt-4.1-mini · 🔒 Default (prompt for writes) · $0.0000 · 0 tok · 0 hist
+ ZenoCLI v0.7.8 · openai/gpt-4.1-mini · 🔒 Default (prompt for writes) · $0.0000 · 0 tok · 0 hist
  session abc123 · chat
 
                         ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗
@@ -8,7 +8,7 @@
                         ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝
                         ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
 
-                            v0.7.7 · /path/to/project
+                            v0.7.8 · /path/to/project
 
                                 Providers
                      ✗ openai (no auth)
