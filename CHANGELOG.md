@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Features
+- Installers: `install.sh` (macOS/Linux/WSL) and `install.ps1` (Windows) download the matching per-OS release asset and put `zeno` on your PATH; configurable via `ZENO_VERSION` / `ZENO_PREFIX` / `ZENO_REPO`
+- Releases now ship a platform-independent `zeno-cli.tgz` (npm-installable) alongside the OS archives, so `npm install -g .../zeno-cli.tgz` works
+
+### UI
+- TUI redesigned to a Claude Code–style layout: the round border box around messages is gone — messages flow freely with role icons (`▸` user / `◆` assistant) and colored bold names, the header is a compact single line, and the welcome banner is centered with no frame
+
 ## 0.7.7 - 2026-08-12
 
 ### Features

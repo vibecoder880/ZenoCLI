@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import { DiffView } from "./DiffView.js";
+import { useTheme } from "../theme.js";
 
 export interface ChatLine {
   id: string;
@@ -17,23 +18,30 @@ interface MessageBubbleProps {
   message: ChatLine;
 }
 
-function rolePrefix(role: ChatLine["role"]): { icon: string; color: string; label: string } {
+function rolePrefix(role: ChatLine["role"]): { icon: string; label: string } {
   switch (role) {
     case "user":
-      return { icon: "▸", color: "cyan", label: "You" };
+      return { icon: "▸", label: "You" };
     case "assistant":
-      return { icon: "◆", color: "green", label: "Assistant" };
+      return { icon: "◆", label: "Assistant" };
     default:
-      return { icon: "·", color: "gray", label: "System" };
+      return { icon: "·", label: "System" };
   }
 }
 
 function MessageBubble({ message }: MessageBubbleProps): React.JSX.Element {
-  const { icon, color, label } = rolePrefix(message.role);
+  const theme = useTheme();
+  const { icon, label } = rolePrefix(message.role);
+  const roleColor =
+    message.role === "user"
+      ? theme.primary
+      : message.role === "assistant"
+        ? theme.success
+        : theme.muted;
   return (
-    <Box flexDirection="column" marginBottom={1}>
+    <Box flexDirection="column">
       <Text>
-        <Text color={color} bold>
+        <Text color={roleColor} bold>
           {icon} {label}
         </Text>
       </Text>
@@ -55,17 +63,18 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, maxVisible = 50 }: MessageListProps): React.JSX.Element {
+  const theme = useTheme();
   const hiddenCount = Math.max(0, messages.length - maxVisible);
   const visible = messages.slice(-maxVisible);
 
   return (
-    <Box borderStyle="round" paddingX={1} flexDirection="column" marginTop={1}>
+    <Box flexDirection="column" marginTop={1}>
       {visible.length === 0 ? (
-        <Text dimColor>Conversation is empty. Type a prompt to begin.</Text>
+        <Text color={theme.muted}>Conversation is empty. Type a prompt to begin.</Text>
       ) : (
         <>
           {hiddenCount > 0 ? (
-            <Text dimColor>[... {hiddenCount} earlier messages hidden ...]</Text>
+            <Text color={theme.muted}>[... {hiddenCount} earlier messages hidden ...]</Text>
           ) : null}
           {visible.map((message) => (
             <MessageBubble key={message.id} message={message} />

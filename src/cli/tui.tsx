@@ -19,8 +19,7 @@ import { ModelsDialog, setActiveModel } from "./components/ModelsDialog.js";
 import { resolveTheme, ThemeProvider } from "./theme.js";
 import { collectProviderText } from "../core/stream.js";
 import { resolveModelRoute } from "../providers/router.js";
-import { getConfigPathname, loadConfig } from "../storage/config.js";
-import { appendHistoryEntry, listHistoryEntries, recordBudgetSpend, summarizeTokenUsage } from "../storage/history.js";
+import { getConfigPathname, loadConfig } from "../storage/config.js";import { appendHistoryEntry, listHistoryEntries, recordBudgetSpend, summarizeTokenUsage } from "../storage/history.js";
 import { listProviderCatalog, tryCreateProvider } from "../providers/index.js";
 import { ContextManager } from "../core/context-manager.js";
 import { getMergedInstructions, getInstructionsSummary } from "../core/zeno-md.js";
@@ -726,7 +725,6 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       />
       {showWelcome ? (
         <WelcomeBanner
-          version="0.2.0"
           cwd={cwd}
           providers={providerStatus}
           missingProviders={missingProviders}

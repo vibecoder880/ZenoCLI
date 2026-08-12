@@ -37,24 +37,17 @@ export function Header({
 }: HeaderProps): React.JSX.Element {
   const theme = useTheme();
   return (
-    <Box
-      borderStyle="round"
-      borderColor={theme.primary}
-      paddingX={1}
-      flexDirection="column"
-    >
+    <Box flexDirection="column" marginBottom={1}>
       <Box>
         <Text bold color={theme.primary}>
           ZenoCLI
         </Text>
-        <Text dimColor> · v{VERSION}</Text>
+        <Text color={theme.muted}> v{VERSION}</Text>
+        <Text dimColor> · {provider}/{model}</Text>
+        <Text color={theme.muted}> · {permissionMode}</Text>
+        <Text dimColor> · {formatCost(sessionCost)} · {tokens} tok · {historyEntries} hist</Text>
       </Box>
-      <Text color={theme.success}>
-        {provider}/{model}
-      </Text>
-      <Text dimColor>
-        session {sessionId.slice(0, 12)} · {mode} · {permissionMode} · {formatCost(sessionCost)} · {tokens} tok · {historyEntries} hist
-      </Text>
+      <Text dimColor>session {sessionId.slice(0, 12)} · {mode}</Text>
     </Box>
   );
 }

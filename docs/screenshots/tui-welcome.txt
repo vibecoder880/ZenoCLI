@@ -1,40 +1,27 @@
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.7.7                                                            │
-│ openai/gpt-4.1-mini                                                          │
-│ session abc123 · chat · 🔒 Default (prompt for writes) · $0.0000 · 0 tok ·   │
-│ 0 hist                                                                       │
-╰──────────────────────────────────────────────────────────────────────────────╯
+ ZenoCLI v0.7.7 · openai/gpt-4.1-mini · 🔒 Default (prompt for writes) · $0.0000 · 0 tok · 0 hist
+ session abc123 · chat
 
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗                                  │
-│ ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗                                 │
-│ ██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║                                 │
-│ ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║                                 │
-│ ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝                                 │
-│ ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝                                  │
-│                                                                              │
-│ v0.7.7 · /path/to/project                                                    │
-│                                                                              │
-│ Providers                                                                    │
-│ ✗ openai (no auth)                                                           │
-│ ✗ anthropic (no auth)                                                        │
-│ ✗ google (no auth)                                                           │
-│                                                                              │
-│ ⚠ Missing auth for: openai, anthropic, google                                │
-│ Run: zeno auth openai                                                       │
-│                                                                              │
-│ Type a prompt to begin. Try /help for commands. Banner dismisses on first    │
-│ prompt.                                                                      │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                        ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗
+                        ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗
+                        ██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║
+                        ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║
+                        ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝
+                        ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
 
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ Ready                                                                        │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                            v0.7.7 · /path/to/project
 
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ Conversation is empty. Type a prompt to begin.                               │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                                Providers
+                     ✗ openai (no auth)
+                     ✗ anthropic (no auth)
+                     ✗ google (no auth)
 
-> Ask ZenoCLI to help (chat mode)
+                   ⚠ Missing auth for: openai, anthropic, google
+                          Run: zeno auth openai
+
+        Type a prompt to begin. Try /help for commands. Banner dismisses on first prompt.
+
+ Conversation is empty. Type a prompt to begin.
+
+ > Ask ZenoCLI to help (chat mode)
 
  Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history

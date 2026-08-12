@@ -8,21 +8,18 @@ review, MCP server support, and lifecycle hooks. It runs on Node.js 22+ for
 Windows, Linux, and macOS.
 
 ```
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.7.7                                                            │
-│ anthropic/claude-sonnet-4-0                                                  │
-│ session abc123 · agent · 🔒 Default (prompt for writes) · $0.0012 · 1.2k tok │
-╰──────────────────────────────────────────────────────────────────────────────╯
+ ZenoCLI v0.7.7 · anthropic/claude-sonnet-4-0 · 🔒 Default (prompt for writes) · $0.0012 · 1.2k tok · 0 hist
+ session abc123 · agent
 
-> Refactor the parser to use async iterators.
-→ run_command ✓ 18 tests passed
-✎ edit_file  +124 −38
+ > Refactor the parser to use async iterators.
+ → run_command ✓ 18 tests passed
+ ✎ edit_file  +124 −38
 
-  @@ -142,7 +142,8 @@
-  -  const items: string[] = [];
-  +  for await (const chunk of stream) { ... }
+   @@ -142,7 +142,8 @@
+   -  const items: string[] = [];
+   +  for await (const chunk of stream) { ... }
 
-✓ Refactored parser to async iterators. (Turns: 4 · Tokens: 1,240)
+ ✓ Refactored parser to async iterators. (Turns: 4 · Tokens: 1,240)
 ```
 
 See [the full TUI layout](#giao-dien-tui) below.
@@ -57,15 +54,31 @@ See [the full TUI layout](#giao-dien-tui) below.
 
 ## Install
 
+ZenoCLI ships as native release tarballs plus a GitHub-hosted npm tarball. Pick
+whichever fits your platform:
+
 ```bash
-# from source
+# macOS / Linux / WSL
+curl -fsSL https://github.com/vibecoder880/ZenoCLI/raw/khanh/scripts/install.sh | bash
+
+# Windows (PowerShell)
+powershell -c "irm https://github.com/vibecoder880/ZenoCLI/raw/khanh/scripts/install.ps1 | iex"
+
+# …or install the latest release tarball directly (any OS with Node 22+)
+npm install -g https://github.com/vibecoder880/ZenoCLI/releases/latest/download/zeno-cli.tgz
+```
+
+The shell/PowerShell installers download the matching per-OS asset
+(`linux-x64`, `macos-x64`, `windows-x64`) from the latest GitHub release and
+put `zeno` on your PATH. They respect `ZENO_VERSION`, `ZENO_PREFIX`, and
+`ZENO_REPO` to pin a version, choose a prefix, or install from a fork.
+
+From source:
+
+```bash
 npm install
 npm run build
 node dist/index.js --help
-
-# global (after npm publish)
-npm install -g zeno-cli
-zeno --help
 ```
 
 ## Quick start
@@ -96,44 +109,31 @@ Run `zeno` (no subcommand) to open the interactive TUI.
 **First run** (no auth yet) shows the welcome banner:
 
 ```text
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.7.7                                                            │
-│ openai/gpt-4.1-mini                                                          │
-│ session abc123 · chat · 🔒 Default (prompt for writes) · $0.0000 · 0 tok ·   │
-│ 0 hist                                                                       │
-╰──────────────────────────────────────────────────────────────────────────────╯
+ ZenoCLI v0.7.7 · openai/gpt-4.1-mini · 🔒 Default (prompt for writes) · $0.0000 · 0 tok · 0 hist
+ session abc123 · chat
 
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗                                  │
-│ ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗                                 │
-│ ██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║                                 │
-│ ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║                                 │
-│ ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝                                 │
-│ ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝                                  │
-│                                                                              │
-│ v0.7.7 · /path/to/project                                                    │
-│                                                                              │
-│ Providers                                                                    │
-│ ✗ openai (no auth)                                                           │
-│ ✗ anthropic (no auth)                                                        │
-│ ✗ google (no auth)                                                           │
-│                                                                              │
-│ ⚠ Missing auth for: openai, anthropic, google                                │
-│ Run: zeno auth openai                                                       │
-│                                                                              │
-│ Type a prompt to begin. Try /help for commands. Banner dismisses on first    │
-│ prompt.                                                                      │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                        ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗
+                        ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗
+                        ██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║
+                        ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║
+                        ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝
+                        ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
 
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ Ready                                                                        │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                            v0.7.7 · /path/to/project
 
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ Conversation is empty. Type a prompt to begin.                               │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                                Providers
+                     ✗ openai (no auth)
+                     ✗ anthropic (no auth)
+                     ✗ google (no auth)
 
-> Ask ZenoCLI to help (chat mode)
+                   ⚠ Missing auth for: openai, anthropic, google
+                          Run: zeno auth openai
+
+        Type a prompt to begin. Try /help for commands. Banner dismisses on first prompt.
+
+ Conversation is empty. Type a prompt to begin.
+
+ > Ask ZenoCLI to help (chat mode)
 
  Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
 ```
@@ -143,26 +143,23 @@ color-coded (user cyan, assistant green, system dim), the agent stream prints
 live tool events, and file edits render as a colorized diff:
 
 ```text
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ ZenoCLI · v0.7.7                                                            │
-│ anthropic/claude-sonnet-4-0                                                  │
-│ session abc123 · agent · 🔒 Default (prompt for writes) · $0.0012 · 1.2k tok │
-╰──────────────────────────────────────────────────────────────────────────────╯
+ ZenoCLI v0.7.7 · anthropic/claude-sonnet-4-0 · 🔒 Default (prompt for writes) · $0.0012 · 1.2k tok · 0 hist
+ session abc123 · agent
 
-▸ You
-  Refactor the parser to use async iterators.
+ ▸ You
+   Refactor the parser to use async iterators.
 
-◆ Assistant
-  ✎ edit_file(parser.ts)   ✓ 124 insertions, 38 deletions
+ ◆ Assistant
+   ✎ edit_file(parser.ts)   ✓ 124 insertions, 38 deletions
 
-  @@ -142,7 +142,8 @@
-  -  const items: string[] = [];
-  +  for await (const chunk of stream) { ... }
+   @@ -142,7 +142,8 @@
+   -  const items: string[] = [];
+   +  for await (const chunk of stream) { ... }
 
-  ✓ Refactored parser to async iterators.
-  Turns: 4 | Tokens: 1,240 | Tools: run_command, edit_file, read_file
+   ✓ Refactored parser to async iterators.
+   Turns: 4 | Tokens: 1,240 | Tools: run_command, edit_file, read_file
 
-> Ask ZenoCLI to help (agent mode)
+ > Ask ZenoCLI to help (agent mode)
 
  Esc exit · / commands · Shift+Tab permission · Shift+Enter newline · ↑↓ history
 ```
