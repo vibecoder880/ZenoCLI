@@ -15,7 +15,7 @@ const EVENT_PATTERNS: Array<{ test: (line: string) => boolean; color: string }> 
   { test: (line) => line.startsWith("💾"), color: "cyan" }
 ];
 
-function colorFor(line: string, theme: { primary: string; success: string; warning: string; muted: string }): string | undefined {
+function colorFor(line: string): string | undefined {
   for (const pattern of EVENT_PATTERNS) {
     if (pattern.test(line)) {
       return pattern.color;
@@ -39,7 +39,7 @@ export function AgentStatus({ lines, maxVisible = 20 }: AgentStatusProps): React
   return (
     <Box flexDirection="column" marginTop={1}>
       {visible.map((line, index) => {
-        const color = colorFor(line, theme);
+        const color = colorFor(line);
         return (
           <Text key={`${line}-${index}`} color={color}>
             {line}
