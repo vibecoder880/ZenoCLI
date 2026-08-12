@@ -8,7 +8,7 @@ tools:
   - grep
   - write_file
   - edit_file
-model: anthropic/claude-sonnet-4-0
+model: anthropic/claude-sonnet-5
 ---
 
 # Coder Agent

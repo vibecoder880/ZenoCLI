@@ -7,7 +7,7 @@ tools:
   - glob
   - grep
   - run_command
-model: anthropic/claude-sonnet-4-0
+model: anthropic/claude-sonnet-5
 ---
 
 # Reviewer Agent

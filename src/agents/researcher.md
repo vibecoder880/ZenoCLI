@@ -8,7 +8,7 @@ tools:
   - grep
   - web_search
   - web_fetch
-model: anthropic/claude-sonnet-4-0
+model: anthropic/claude-sonnet-5
 ---
 
 # Researcher Agent

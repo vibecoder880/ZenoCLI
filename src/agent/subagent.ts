@@ -146,7 +146,7 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
   } = options;
 
   const tools = options.tools ?? READ_ONLY_TOOLS;
-  const modelId = model ?? "anthropic/claude-sonnet-4-0";
+  const modelId = model ?? "anthropic/claude-sonnet-5";
 
   // Build tool context
   const toolContext: ToolExecutionContext = {

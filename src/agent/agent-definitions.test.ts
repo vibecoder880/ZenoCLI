@@ -24,7 +24,7 @@ describe("AgentDefinitionLoader", () => {
 name: reviewer
 description: Reviews code
 tools: [read_file, glob]
-model: anthropic/claude-sonnet-4-0
+model: anthropic/claude-sonnet-5
 ---
 You are a code reviewer.`,
       "utf8",
@@ -38,7 +38,7 @@ You are a code reviewer.`,
     expect(agent).toBeDefined();
     expect(agent?.description).toBe("Reviews code");
     expect(agent?.tools).toEqual(["read_file", "glob"]);
-    expect(agent?.model).toBe("anthropic/claude-sonnet-4-0");
+    expect(agent?.model).toBe("anthropic/claude-sonnet-5");
     expect(agent?.systemPrompt).toContain("code reviewer");
   });
 

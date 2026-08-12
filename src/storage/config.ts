@@ -92,14 +92,14 @@ export interface ZenoConfig {
 
 export const DEFAULT_CONFIG: ZenoConfig = {
   default: {
-    model: "openai/gpt-4.1-mini",
+    model: "openai/gpt-5.6-terra",
     provider: "openai",
     streaming: true
   },
   aliases: {
-    fast: "openai/gpt-4.1-mini",
-    smart: "anthropic/claude-sonnet-4-0",
-    cheap: "google/gemini-2.5-flash"
+    fast: "openai/gpt-5.6-luna",
+    smart: "anthropic/claude-sonnet-5",
+    cheap: "google/gemini-3-flash-lite"
   },
   context: {
     maxTokens: 100_000,
@@ -125,7 +125,7 @@ export const DEFAULT_CONFIG: ZenoConfig = {
   routing: {
     strategy: "balanced"
   },
-  metadataModel: "openai/gpt-4o-mini",
+  metadataModel: "openai/gpt-5.6-luna",
   commands: {},
   theme: {
     mode: "dark"

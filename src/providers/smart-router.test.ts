@@ -5,7 +5,7 @@ import { resolveMetadataModel, resolveModelRoute } from "./router.js";
 import type { ZenoConfig } from "../storage/config.js";
 
 const baseConfig = {
-  default: { model: "openai/gpt-4.1-mini", provider: "openai", streaming: true },
+  default: { model: "openai/gpt-5.6-terra", provider: "openai", streaming: true },
   aliases: {},
   context: { maxTokens: 100000, ignore: [] },
 } as unknown as ZenoConfig;
@@ -13,19 +13,19 @@ const baseConfig = {
 describe("SmartRouter (Super Kit pattern)", () => {
   it("picks the cheapest model on cost strategy", () => {
     const decision = new SmartRouter(new ModelRegistry()).route("cost");
-    expect(decision.selected.id).toBe("openai/gpt-4o-mini");
-    expect(decision.estimatedCostPerMillion).toBeLessThan(1);
+    expect(decision.selected.id).toBe("openai/gpt-5.6-luna");
+    expect(decision.estimatedCostPerMillion).toBe(1.4);
   });
 
   it("picks the highest-quality model on quality strategy", () => {
     const decision = new SmartRouter(new ModelRegistry()).route("quality");
-    expect(decision.selected.qualityScore).toBe(9.5);
-    expect(decision.selected.id).toBe("anthropic/claude-opus-4");
+    expect(decision.selected.qualityScore).toBe(10);
+    expect(decision.selected.id).toBe("anthropic/claude-fable-5");
   });
 
   it("picks the fastest model on speed strategy", () => {
     const decision = new SmartRouter(new ModelRegistry()).route("speed");
-    expect(decision.selected.latencyMs).toBeLessThanOrEqual(900);
+    expect(decision.selected.latencyMs).toBeLessThanOrEqual(700);
   });
 
   it("returns a deterministic balanced decision", () => {
@@ -45,7 +45,7 @@ describe("resolveModelRoute auto (SmartRouter integration)", () => {
     const route = resolveModelRoute(baseConfig, "auto");
     expect(route.source).toBe("auto");
     expect(route.provider).toBe("openai");
-    expect(route.model).toBe("gpt-4o-mini");
+    expect(route.model).toBe("gpt-5.6-luna");
   });
 
   it("honors the configured routing strategy", () => {
@@ -56,25 +56,25 @@ describe("resolveModelRoute auto (SmartRouter integration)", () => {
 
     const route = resolveModelRoute(config, "auto");
     expect(route.provider).toBe("anthropic");
-    expect(route.model).toBe("claude-opus-4");
+    expect(route.model).toBe("claude-fable-5");
   });
 
   it("falls back to balanced when no routing config", () => {
     const route = resolveModelRoute(baseConfig, "auto");
     expect(route.source).toBe("auto");
-    expect(route.model).toBe("gpt-4o-mini");
+    expect(route.model).toBe("gpt-5.6-luna");
   });
 });
 
 describe("resolveMetadataModel", () => {
   it("prefers the configured metadataModel", () => {
-    const config = { ...baseConfig, metadataModel: "openai/gpt-4.1-mini" } as unknown as ZenoConfig;
-    expect(resolveMetadataModel(config)).toBe("openai/gpt-4.1-mini");
+    const config = { ...baseConfig, metadataModel: "openai/gpt-5.6-luna" } as unknown as ZenoConfig;
+    expect(resolveMetadataModel(config)).toBe("openai/gpt-5.6-luna");
   });
 
   it("falls back to the SmartRouter cost (economy) model", () => {
     const config = { ...baseConfig } as unknown as ZenoConfig;
-    expect(resolveMetadataModel(config)).toBe("openai/gpt-4o-mini");
+    expect(resolveMetadataModel(config)).toBe("openai/gpt-5.6-luna");
   });
 });
 
@@ -88,8 +88,8 @@ describe("ModelRegistry", () => {
 
   it("looks up a model by id", () => {
     const registry = new ModelRegistry();
-    const model = registry.get("openai/gpt-4.1-mini");
+    const model = registry.get("anthropic/claude-sonnet-5");
     expect(model?.tier).toBe("standard");
-    expect(model?.qualityScore).toBe(7.5);
+    expect(model?.qualityScore).toBe(8.8);
   });
 });

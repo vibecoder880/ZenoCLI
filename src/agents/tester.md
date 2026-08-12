@@ -9,7 +9,7 @@ tools:
   - write_file
   - edit_file
   - run_command
-model: anthropic/claude-sonnet-4-0
+model: anthropic/claude-sonnet-5
 ---
 
 # Tester Agent

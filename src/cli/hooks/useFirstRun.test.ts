@@ -3,7 +3,7 @@ import { detectFirstRun } from "./useFirstRun.js";
 import type { ZenoConfig } from "../../storage/config.js";
 
 const baseConfig: ZenoConfig = {
-  default: { model: "openai/gpt-4.1-mini", provider: "openai", streaming: true },
+  default: { model: "openai/gpt-5.6-terra", provider: "openai", streaming: true },
   aliases: {},
   context: { maxTokens: 100000, ignore: [] },
   permission: { mode: "default", autoApprove: {} }
@@ -13,7 +13,7 @@ describe("detectFirstRun", () => {
   it("returns isFirstRun false when providers and aliases are set", () => {
     const config = {
       ...baseConfig,
-      aliases: { fast: "openai/gpt-4.1-mini" }
+      aliases: { fast: "openai/gpt-5.6-luna" }
     } as ZenoConfig;
     const state = detectFirstRun(config);
     // Note: actual provider state depends on global auth store; just check shape.

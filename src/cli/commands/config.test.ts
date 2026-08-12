@@ -22,9 +22,9 @@ describe("config commands", () => {
   });
 
   it("updates alias values", () => {
-    runConfigSetCommand("aliases.review", "anthropic/claude-sonnet-4-0");
+    runConfigSetCommand("aliases.review", "anthropic/claude-sonnet-5");
     runConfigShowCommand();
 
-    expect(log.mock.calls.flat().join("\n")).toContain("review -> anthropic/claude-sonnet-4-0");
+    expect(log.mock.calls.flat().join("\n")).toContain("review -> anthropic/claude-sonnet-5");
   });
 });

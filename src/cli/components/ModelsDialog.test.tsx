@@ -15,8 +15,8 @@ vi.mock("../../storage/config.js", () => ({
 
 describe("setActiveModel", () => {
   it("updates default.model and infers the provider from the model id", () => {
-    const next = setActiveModel("anthropic/claude-opus-4");
-    expect(next.default.model).toBe("anthropic/claude-opus-4");
+    const next = setActiveModel("anthropic/claude-opus-5");
+    expect(next.default.model).toBe("anthropic/claude-opus-5");
     expect(next.default.provider).toBe("anthropic");
   });
 

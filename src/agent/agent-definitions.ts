@@ -6,7 +6,7 @@
  *   name: agent-name
  *   description: ...
  *   tools: [read_file, glob, ...]
- *   model: anthropic/claude-sonnet-4-0
+ *   model: anthropic/claude-sonnet-5
  *   ---
  *   # System prompt...
  */

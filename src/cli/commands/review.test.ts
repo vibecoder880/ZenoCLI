@@ -22,14 +22,14 @@ vi.mock("../../providers/index.js", () => ({
 
 vi.mock("../../storage/config.js", () => ({
   loadConfig: () => ({
-    default: { provider: "openai", model: "gpt-4.1-mini", streaming: true },
+    default: { provider: "openai", model: "gpt-5.6-terra", streaming: true },
     context: { ignore: [] },
   }),
 }));
 
 vi.mock("../../providers/router-fallback.js", () => ({
   selectUsableRoute: () => ({
-    route: { provider: "openai", model: "gpt-4.1-mini" },
+    route: { provider: "openai", model: "gpt-5.6-terra" },
     warning: undefined,
   }),
 }));

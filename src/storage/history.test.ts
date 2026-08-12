@@ -22,7 +22,7 @@ describe("history storage", () => {
     appendHistoryEntry({
       cwd: tempHome,
       provider: "openai",
-      model: "gpt-4.1-mini",
+      model: "gpt-5.6-terra",
       prompt: "hello",
       response: "world",
       totalTokens: 42,

@@ -53,7 +53,7 @@ describe("filterSlashCommands", () => {
   const config = {
     commands: {
       refactor: { prompt: "Refactor the current file for clarity." },
-      summarize: { prompt: "Summarize the conversation.", model: "gpt-4o-mini" },
+      summarize: { prompt: "Summarize the conversation.", model: "gpt-5.6-luna" },
     },
   };
 

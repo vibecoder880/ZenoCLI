@@ -8,7 +8,7 @@ tools:
   - grep
   - ask_user
   - spawn_subagent
-model: anthropic/claude-sonnet-4-0
+model: anthropic/claude-sonnet-5
 ---
 
 # Coordinator Agent

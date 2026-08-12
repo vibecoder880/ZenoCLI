@@ -100,7 +100,7 @@ Tạo custom agent roles cho subagent spawning.
 name: security-auditor
 description: Audits code for security issues
 tools: [read_file, grep, glob]
-model: anthropic/claude-sonnet-4-0
+model: anthropic/claude-sonnet-5
 ---
 
 # Security Auditor Agent

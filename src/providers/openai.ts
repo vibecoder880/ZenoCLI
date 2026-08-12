@@ -88,23 +88,23 @@ export class OpenAiProvider implements AiProvider {
   public async listModels(): Promise<ModelInfo[]> {
     return [
       {
-        id: "gpt-4o",
-        displayName: "GPT-4o",
+        id: "gpt-5.6-sol",
+        displayName: "GPT-5.6 Sol",
         provider: this.slug
       },
       {
-        id: "gpt-4.1-mini",
-        displayName: "GPT-4.1 mini",
+        id: "gpt-5.6-terra",
+        displayName: "GPT-5.6 Terra",
         provider: this.slug
       },
       {
-        id: "gpt-4.1",
-        displayName: "GPT-4.1",
+        id: "gpt-5.6-luna",
+        displayName: "GPT-5.6 Luna",
         provider: this.slug
       },
       {
-        id: "gpt-4o-mini",
-        displayName: "GPT-4o mini",
+        id: "gpt-5.5",
+        displayName: "GPT-5.5",
         provider: this.slug
       }
     ];
