@@ -62,7 +62,7 @@ function InlineNodes({
           case "link":
             return osc8 ? (
               <Text key={i} color={theme.noColor ? undefined : theme.palette.accent}>
-                {node.text}
+                {`]8;;${node.url}\\${node.text}]8;;\\`}
               </Text>
             ) : (
               <Text key={i} color={theme.noColor ? undefined : theme.palette.accent}>

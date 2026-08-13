@@ -58,8 +58,21 @@ function UserMessage({
 }
 
 function Cursor({ unicode, theme }: { unicode: boolean; theme: ResolvedTheme }): React.JSX.Element {
+  const [visible, setVisible] = React.useState(true);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible((v) => !v);
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
   const glyph = unicode ? "▍" : "|";
-  return <Text color={theme.noColor ? undefined : theme.palette.subtle}>{glyph}</Text>;
+  return (
+    <Text color={theme.noColor ? undefined : theme.palette.subtle}>
+      {visible ? glyph : " "}
+    </Text>
+  );
 }
 
 function AssistantMessage({
