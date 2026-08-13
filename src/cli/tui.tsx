@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, render, useApp, useInput } from "ink";
+import { execSync } from "node:child_process";
 import { AgentStatus } from "./components/AgentStatus.js";
 import { Header } from "./components/Header.js";
 import { MessageList, type ChatLine } from "./components/MessageList.js";
@@ -29,6 +30,8 @@ import { ForkDialog } from "./components/ForkDialog.js";
 import { runAgentLoop, type AgentEvent } from "../agent/loop.js";
 import { CheckpointManager } from "../safety/checkpoints.js";
 import { ALL_PERMISSION_MODES, nextPermissionMode, permissionModeLabel, type PermissionMode } from "../safety/permissions.js";
+import { Shell as V2Shell } from "../ui/app/Shell.js";
+import { VERSION } from "../ui/components/Header.js";
 
 interface LaunchOptions {
   model: string;
@@ -708,6 +711,45 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   }, []);
 
   const showWelcome = screen === "welcome" && firstRun.isFirstRun;
+  const v2 = Boolean(process.env.ZENO_UI_V2);
+  // Git branch for the v2 header statusline; best-effort, read on each render.
+  const branchName = useMemo(() => {
+    if (!cwd) return "";
+    try {
+      return execSync("git branch --show-current", { cwd }).toString().trim();
+    } catch {
+      return "";
+    }
+  }, [cwd]);
+
+  if (v2) {
+    // Zeno UI v2 shell (Phase 2) — opt-in via ZENO_UI_V2=1 while the v1 TUI
+    // remains the default. The v2 shell is presentation-only; it reuses the
+    // same messages/route state the v1 tree renders.
+    const contextPct =
+      tokenCount > 0
+        ? Math.min(100, Math.round((tokenCount / (config.context.maxTokens || 128000)) * 100))
+        : 0;
+    return (
+      <V2Shell
+        version={VERSION}
+        provider={activeRoute.provider}
+        model={activeRoute.model}
+        branch={branchName}
+        cwd={cwd}
+        contextPct={contextPct}
+        messages={messages}
+        input={input}
+        busy={isBusy}
+        firstRun={showWelcome}
+        providersReady={providerStatus.filter((p) => p.status === "ok").length}
+        onInputChange={setInput}
+        onSubmit={(value) => {
+          void submitPrompt(value);
+        }}
+      />
+    );
+  }
 
   const palette = resolveTheme(config);
   return (

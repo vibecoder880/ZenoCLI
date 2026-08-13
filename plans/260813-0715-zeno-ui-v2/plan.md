@@ -1,6 +1,6 @@
 # Zeno UI v2 — plan
 
-**Status:** Phase 0 + Phase 1 DONE
+**Status:** Phase 0 + Phase 1 + Phase 2 DONE
 **Branch:** khanh
 **Docs home:** `docs/ui/`
 **Source home:** `src/ui/`
@@ -38,3 +38,4 @@
 ## Links
 - Phase 0: `phase-00-ui-spec.md`
 - Phase 1: `phase-01-renderer-foundation.md`
+- Phase 2: `phase-02-app-shell.md`
