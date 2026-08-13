@@ -20,6 +20,8 @@ import { parseMarkdown } from "../render/markdown-parse.js";
 import { MarkdownBlock } from "../render/markdown-blocks.jsx";
 import { Activity } from "./Activity.js";
 import type { ActivityLine } from "../activity/types.js";
+import { TaskBlock } from "./TaskBlock.js";
+import type { TaskItem } from "./TaskBlock.js";
 
 export interface ChatLine {
   id: string;
@@ -152,6 +154,12 @@ export interface ConversationProps {
   activityLines?: ActivityLine[];
   /** Index of the focused activity line for progressive disclosure. */
   focusedActivityIndex?: number;
+  /** Task items (Phase 6) for inline task blocks. */
+  taskItems?: TaskItem[];
+  /** Whether to expand task items (default: collapsed). */
+  taskExpanded?: boolean;
+  /** Title for the task block. */
+  taskTitle?: string;
 }
 
 export function Conversation({
@@ -161,6 +169,9 @@ export function Conversation({
   maxVisible = 50,
   activityLines,
   focusedActivityIndex,
+  taskItems,
+  taskExpanded = false,
+  taskTitle = "Plan",
 }: ConversationProps): React.JSX.Element {
   const theme = useUiTheme();
 
@@ -211,6 +222,9 @@ export function Conversation({
       })}
       {activityLines && activityLines.length > 0 ? (
         <Activity lines={activityLines} focusedIndex={focusedActivityIndex ?? -1} unicode={unicode} />
+      ) : null}
+      {taskItems && taskItems.length > 0 ? (
+        <TaskBlock title={taskTitle} items={taskItems} expanded={taskExpanded} unicode={unicode} />
       ) : null}
     </Box>
   );
