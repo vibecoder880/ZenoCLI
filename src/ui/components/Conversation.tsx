@@ -23,6 +23,8 @@ import type { ActivityLine } from "../activity/types.js";
 import { TaskBlock } from "./TaskBlock.js";
 import type { TaskItem } from "./TaskBlock.js";
 import { DiffBlock } from "./DiffBlock.js";
+import { AgentActivity } from "./AgentActivity.js";
+import type { AgentInfo } from "./AgentActivity.js";
 
 export interface ChatLine {
   id: string;
@@ -165,6 +167,8 @@ export interface ConversationProps {
   diffText?: string;
   /** Index of the focused file in the diff block. */
   focusedDiffFileIndex?: number;
+  /** Background agents (Phase 9) for inline agent activity. */
+  agents?: AgentInfo[];
 }
 
 export function Conversation({
@@ -179,6 +183,7 @@ export function Conversation({
   taskTitle = "Plan",
   diffText,
   focusedDiffFileIndex = 0,
+  agents,
 }: ConversationProps): React.JSX.Element {
   const theme = useUiTheme();
 
@@ -235,6 +240,9 @@ export function Conversation({
       ) : null}
       {diffText ? (
         <DiffBlock diffText={diffText} unicode={unicode} focusedFileIndex={focusedDiffFileIndex} />
+      ) : null}
+      {agents && agents.length > 0 ? (
+        <AgentActivity agents={agents} unicode={unicode} />
       ) : null}
     </Box>
   );
