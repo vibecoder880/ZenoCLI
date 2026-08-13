@@ -10,7 +10,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import { useUiTheme, type ResolvedTheme } from "../theme/provider.js";
 import { resolveSymbols } from "../render/markdown.js";
-import { parseDiff, diffSummary, type DiffStats, type DiffFile } from "../render/diff-parse.js";
+import { parseDiff, diffSummary, type DiffFile } from "../render/diff-parse.js";
 
 export interface DiffBlockProps {
   /** Raw unified diff text. */
@@ -52,13 +52,11 @@ function DiffHunkLine({
 
 function DiffFileBlock({
   file,
-  index,
   focused,
   unicode,
   theme,
 }: {
   file: DiffFile;
-  index: number;
   focused: boolean;
   unicode: boolean;
   theme: ResolvedTheme;

@@ -19,7 +19,7 @@ vi.mock("../theme/provider.js", () => ({
 }));
 
 vi.mock("../render/markdown.js", () => ({
-  resolveSymbols: (_unicode: boolean) => ({
+  resolveSymbols: () => ({
     bullet: "•",
     horizontalRule: "─",
     linkArrow: "→",
