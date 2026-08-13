@@ -24,8 +24,6 @@ export interface OverlayLayerProps {
 export function OverlayLayer({
   overlay,
   unicode,
-  onSelect: _onSelect,
-  onClose: _onClose,
 }: OverlayLayerProps): React.JSX.Element | null {
   const theme = useUiTheme();
 

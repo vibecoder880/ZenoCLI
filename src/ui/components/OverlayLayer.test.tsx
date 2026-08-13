@@ -71,7 +71,7 @@ describe("OverlayLayer", () => {
 
   it("returns null when overlay is null", () => {
     const { lastFrame } = render(
-      <OverlayLayer overlay={null as any} unicode={true} />
+      <OverlayLayer overlay={null as unknown as import("../state/overlay-manager.js").OverlayState} unicode={true} />
     );
     expect(lastFrame()).toBe("");
   });
