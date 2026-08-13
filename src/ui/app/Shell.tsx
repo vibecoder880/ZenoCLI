@@ -16,7 +16,7 @@ import { detectCapabilities, type TerminalCapabilities } from "../terminal/syste
 import { isCompact } from "../terminal/resize.js";
 import { Header } from "../components/Header.js";
 import { Conversation, Greeting, type ChatLine } from "../components/Conversation.js";
-import { Input } from "../components/Input.js";
+import { Composer } from "../components/Composer.js";
 import { Statusline, type StatusSection } from "../components/Statusline.js";
 import { KeyboardManager, type Focus } from "../keyboard/manager.js";
 
@@ -103,11 +103,12 @@ export function Shell({
         ) : (
           <Conversation messages={messages} unicode={unicode} osc8={caps.osc8Links} />
         )}
-        <Input
+        <Composer
           value={input}
           placeholder={busy ? "Working… (Esc to interrupt)" : "What would you like to build?"}
           disabled={busy}
           unicode={unicode}
+          cwd={cwd}
           onChange={onInputChange}
           onSubmit={onSubmit}
         />
