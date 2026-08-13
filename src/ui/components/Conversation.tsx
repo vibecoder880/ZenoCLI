@@ -1,20 +1,34 @@
 /**
  * Zeno UI v2 — Conversation (spec §5, docs/ui/component-spec.md § Message blocks).
  *
- * Renders user/assistant messages with the semantic `›` user glyph and muted
- * assistant body. No bubbles, no borders. A minimal one-line greeting replaces
- * the old ASCII banner. Phase 3 adds markdown/code/diff rendering.
+ * Renders user/assistant/system messages with the semantic `›` user glyph and
+ * Markdown-aware assistant bodies (Phase 3): headers, lists, code, tables,
+ * links (OSC 8 when available), and unified diffs — all borderless and muted by
+ * default. Supports streaming (trailing cursor), collapsible messages
+ * (progressive disclosure), quiet single-line tool activity, and transcript
+ * virtualization via `maxVisible`.
+ *
+ * Components read `UIState` and render; they never modify messages (the event
+ * bus / shell owns state).
  */
 
 import React from "react";
 import { Box, Text } from "ink";
-import { useUiTheme } from "../theme/provider.js";
+import { useUiTheme, type ResolvedTheme } from "../theme/provider.js";
 import { resolveSymbols } from "../render/markdown.js";
+import { parseMarkdown } from "../render/markdown-parse.js";
+import { MarkdownBlock } from "../render/markdown-blocks.jsx";
 
 export interface ChatLine {
   id: string;
-  role: "system" | "user" | "assistant";
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
+  /** True while the message is still streaming in. */
+  streaming?: boolean;
+  /** Collapsed to a one-line summary (progressive disclosure, spec §33). */
+  collapsed?: boolean;
+  /** One-line summary shown when collapsed (defaults to first line). */
+  summary?: string;
 }
 
 function UserMessage({
@@ -24,7 +38,7 @@ function UserMessage({
 }: {
   content: string;
   unicode: boolean;
-  theme: ReturnType<typeof useUiTheme>;
+  theme: ResolvedTheme;
 }): React.JSX.Element {
   const symbols = resolveSymbols(unicode);
   return (
@@ -36,25 +50,67 @@ function UserMessage({
   );
 }
 
+function Cursor({ unicode, theme }: { unicode: boolean; theme: ResolvedTheme }): React.JSX.Element {
+  const glyph = unicode ? "▍" : "|";
+  return <Text color={theme.noColor ? undefined : theme.palette.subtle}>{glyph}</Text>;
+}
+
 function AssistantMessage({
   content,
+  streaming,
+  collapsed,
+  summary,
   unicode,
+  osc8,
   theme,
 }: {
   content: string;
+  streaming: boolean;
+  collapsed: boolean;
+  summary?: string;
   unicode: boolean;
-  theme: ReturnType<typeof useUiTheme>;
+  osc8: boolean;
+  theme: ResolvedTheme;
 }): React.JSX.Element {
   const symbols = resolveSymbols(unicode);
-  return (
-    <Box flexDirection="column">
-      <Text color={theme.noColor ? undefined : theme.palette.muted}>
-        {symbols.active}
-      </Text>
-      <Box marginLeft={2}>
-        <Text>{content}</Text>
+
+  // Collapsed: show the summary (or first line) as a single quiet line.
+  if (collapsed) {
+    const line = summary ?? content.split("\n")[0] ?? "";
+    return (
+      <Box flexDirection="column">
+        <Text color={theme.noColor ? undefined : theme.palette.muted}>
+          {symbols.action} {line}
+        </Text>
       </Box>
+    );
+  }
+
+  const blocks = parseMarkdown(content);
+  return (
+    <Box flexDirection="column" marginLeft={2}>
+      {blocks.map((block, i) => (
+        <MarkdownBlock key={i} block={block} unicode={unicode} osc8={osc8} theme={theme} />
+      ))}
+      {streaming ? <Cursor unicode={unicode} theme={theme} /> : null}
     </Box>
+  );
+}
+
+function ToolLine({
+  content,
+  theme,
+}: {
+  content: string;
+  theme: ResolvedTheme;
+}): React.JSX.Element {
+  // Quiet operational line (spec §30 "no raw tool logs"). Phase 5 aggregates
+  // multiple events into richer Activity lines; here we keep it to one line.
+  const isError = content.startsWith("✗") || content.startsWith("!") || content.startsWith("[error]");
+  return (
+    <Text color={theme.noColor ? undefined : (isError ? theme.palette.warning : theme.palette.muted)}>
+      {content}
+    </Text>
   );
 }
 
@@ -86,6 +142,8 @@ export function Greeting({ version, cwd, providerCount }: GreetingProps): React.
 export interface ConversationProps {
   messages: ChatLine[];
   unicode: boolean;
+  /** OSC 8 hyperlink support for markdown links. */
+  osc8?: boolean;
   /** Max messages to render; older ones hidden with a marker. */
   maxVisible?: number;
 }
@@ -93,6 +151,7 @@ export interface ConversationProps {
 export function Conversation({
   messages,
   unicode,
+  osc8 = true,
   maxVisible = 50,
 }: ConversationProps): React.JSX.Element {
   const theme = useUiTheme();
@@ -115,17 +174,33 @@ export function Conversation({
           [{hiddenCount} earlier messages hidden]
         </Text>
       ) : null}
-      {visible.map((message) =>
-        message.role === "user" ? (
-          <UserMessage key={message.id} content={message.content} unicode={unicode} theme={theme} />
-        ) : message.role === "assistant" ? (
-          <AssistantMessage key={message.id} content={message.content} unicode={unicode} theme={theme} />
-        ) : (
-          <Text key={message.id} color={theme.noColor ? undefined : theme.palette.subtle}>
-            {message.content}
-          </Text>
-        ),
-      )}
+      {visible.map((message) => {
+        switch (message.role) {
+          case "user":
+            return <UserMessage key={message.id} content={message.content} unicode={unicode} theme={theme} />;
+          case "assistant":
+            return (
+              <AssistantMessage
+                key={message.id}
+                content={message.content}
+                streaming={message.streaming ?? false}
+                collapsed={message.collapsed ?? false}
+                summary={message.summary}
+                unicode={unicode}
+                osc8={osc8}
+                theme={theme}
+              />
+            );
+          case "tool":
+            return <ToolLine key={message.id} content={message.content} theme={theme} />;
+          default:
+            return (
+              <Text key={message.id} color={theme.noColor ? undefined : theme.palette.subtle}>
+                {message.content}
+              </Text>
+            );
+        }
+      })}
     </Box>
   );
 }

@@ -101,7 +101,7 @@ export function Shell({
         {firstRun ? (
           <Greeting version={version} cwd={cwd} providerCount={providersReady} />
         ) : (
-          <Conversation messages={messages} unicode={unicode} />
+          <Conversation messages={messages} unicode={unicode} osc8={caps.osc8Links} />
         )}
         <Input
           value={input}
