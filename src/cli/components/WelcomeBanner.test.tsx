@@ -23,6 +23,20 @@ describe("<WelcomeBanner />", () => {
     expect(frame).toContain("anthropic");
   });
 
+  it("renders the ZENO ASCII logo (not the legacy NEURO art)", () => {
+    const { lastFrame } = render(
+      <WelcomeBanner
+        version="0.2.0"
+        cwd="/tmp"
+        providers={[]}
+        missingProviders={[]}
+      />,
+    );
+    const frame = lastFrame();
+    // The block-letter "Z" row of the ZENO logo.
+    expect(frame).toContain("██╗   ██╗███████╗███╗   ██╗ ██████╗");
+  });
+
   it("shows auth warning when providers are missing", () => {
     const { lastFrame } = render(
       <WelcomeBanner
