@@ -18,6 +18,8 @@ import { useUiTheme, type ResolvedTheme } from "../theme/provider.js";
 import { resolveSymbols } from "../render/markdown.js";
 import { parseMarkdown } from "../render/markdown-parse.js";
 import { MarkdownBlock } from "../render/markdown-blocks.jsx";
+import { Activity } from "./Activity.js";
+import type { ActivityLine } from "../activity/types.js";
 
 export interface ChatLine {
   id: string;
@@ -146,6 +148,10 @@ export interface ConversationProps {
   osc8?: boolean;
   /** Max messages to render; older ones hidden with a marker. */
   maxVisible?: number;
+  /** Activity lines (Phase 5) rendered in the conversation flow. */
+  activityLines?: ActivityLine[];
+  /** Index of the focused activity line for progressive disclosure. */
+  focusedActivityIndex?: number;
 }
 
 export function Conversation({
@@ -153,6 +159,8 @@ export function Conversation({
   unicode,
   osc8 = true,
   maxVisible = 50,
+  activityLines,
+  focusedActivityIndex,
 }: ConversationProps): React.JSX.Element {
   const theme = useUiTheme();
 
@@ -201,6 +209,9 @@ export function Conversation({
             );
         }
       })}
+      {activityLines && activityLines.length > 0 ? (
+        <Activity lines={activityLines} focusedIndex={focusedActivityIndex ?? -1} unicode={unicode} />
+      ) : null}
     </Box>
   );
 }

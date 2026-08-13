@@ -1,6 +1,6 @@
 # Zeno UI v2 — plan
 
-**Status:** Phase 0 + Phase 1 + Phase 2 + Phase 3 + Phase 4 DONE
+**Status:** Phase 0 + Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 DONE
 **Branch:** khanh
 **Docs home:** `docs/ui/`
 **Source home:** `src/ui/`
@@ -41,3 +41,4 @@
 - Phase 2: `phase-02-app-shell.md`
 - Phase 3: `phase-03-conversation-engine.md`
 - Phase 4: `phase-04-composer.md`
+- Phase 5: `phase-05-activity-engine.md`
