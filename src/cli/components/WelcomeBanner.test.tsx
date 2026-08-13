@@ -20,10 +20,9 @@ describe("<WelcomeBanner />", () => {
     expect(frame).toContain("v0.2.0");
     expect(frame).toContain("/tmp/work");
     expect(frame).toContain("openai");
-    expect(frame).toContain("anthropic");
   });
 
-  it("renders the ZENO ASCII logo (not the legacy NEURO art)", () => {
+  it("renders the ZENO ASCII logo", () => {
     const { lastFrame } = render(
       <WelcomeBanner
         version="0.2.0"
@@ -33,11 +32,29 @@ describe("<WelcomeBanner />", () => {
       />,
     );
     const frame = lastFrame();
-    // The block-letter "Z" row of the ZENO logo.
-    expect(frame).toContain("██╗   ██╗███████╗███╗   ██╗ ██████╗");
+    expect(frame).toContain("███████╗");
   });
 
-  it("shows auth warning when providers are missing", () => {
+  it("only shows configured providers, not missing ones", () => {
+    const { lastFrame } = render(
+      <WelcomeBanner
+        version="0.2.0"
+        cwd="/tmp"
+        providers={[
+          { slug: "openai", status: "ok" },
+          { slug: "anthropic", status: "missing" }
+        ]}
+        missingProviders={["anthropic"]}
+      />,
+    );
+    const frame = lastFrame();
+    expect(frame).toContain("openai");
+    expect(frame).not.toContain("anthropic");
+    expect(frame).not.toContain("Missing auth");
+    expect(frame).not.toContain("zeno auth");
+  });
+
+  it("shows no providers message when none configured", () => {
     const { lastFrame } = render(
       <WelcomeBanner
         version="0.2.0"
@@ -46,8 +63,7 @@ describe("<WelcomeBanner />", () => {
         missingProviders={["openai"]}
       />,
     );
-    expect(lastFrame()).toContain("Missing auth");
-    expect(lastFrame()).toContain("zeno auth");
+    expect(lastFrame()).toContain("No providers configured");
   });
 
   it("does not show auth warning when all providers are ok", () => {

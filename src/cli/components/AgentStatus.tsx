@@ -11,7 +11,6 @@ const EVENT_PATTERNS: Array<{ test: (line: string) => boolean; color: string }> 
   { test: (line) => line.startsWith("✗") || line.toLowerCase().startsWith("error"), color: "red" },
   { test: (line) => line.startsWith(">"), color: "yellow" },
   { test: (line) => line.startsWith("+"), color: "green" },
-  { test: (line) => line.startsWith("🔒"), color: "magenta" },
   { test: (line) => line.startsWith("💾"), color: "cyan" }
 ];
 

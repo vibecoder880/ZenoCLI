@@ -199,12 +199,12 @@ export function nextPermissionMode(current: PermissionMode): PermissionMode {
 /** Get a human-readable label for a permission mode. */
 export function permissionModeLabel(mode: PermissionMode): string {
   const labels: Record<PermissionMode, string> = {
-    default: "🔒 Default (prompt for writes)",
-    acceptEdits: "✏️ Accept Edits (auto file changes)",
-    plan: "🔍 Plan (read-only)",
-    auto: "⚡ Auto (with safety classifier)",
-    dontAsk: "🤫 Don't Ask (pre-approved only)",
-    bypassPermissions: "🔓 Bypass (everything allowed)",
+    default: "Default (prompt for writes)",
+    acceptEdits: "Accept Edits (auto file changes)",
+    plan: "Plan (read-only)",
+    auto: "Auto (with safety classifier)",
+    dontAsk: "Don't Ask (pre-approved only)",
+    bypassPermissions: "Bypass (everything allowed)",
   };
   return labels[mode];
 }

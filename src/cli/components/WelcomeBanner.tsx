@@ -7,12 +7,12 @@ const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
 const VERSION: string = pkg.version;
 
-const ASCII_LOGO = `██╗   ██╗███████╗███╗   ██╗ ██████╗
-██║   ██║██╔════╝████╗  ██║██╔═══██╗
-██║   ██║█████╗  ██╔██╗ ██║██║   ██║
-╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║   ██║
- ╚████╔╝ ███████╗██║ ╚████║╚██████╔╝
-  ╚═══╝  ╚══════╝╚═╝  ╚═══╝ ╚═════╝`;
+const ASCII_LOGO = `███████╗ ██████╗  █████╗ ███╗   ███╗
+██╔════╝██╔════╝ ██╔══██╗████╗ ████║
+███████╗██║  ███╗███████║██╔████╔██║
+╚════██║██║   ██║██╔══██║██║╚██╔╝██║
+███████║╚██████╔╝██║  ██║██║ ╚═╝ ██║
+╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝`;
 
 export interface WelcomeBannerProps {
   version?: string;
@@ -29,8 +29,8 @@ export function WelcomeBanner({
   missingProviders,
   onDismiss
 }: WelcomeBannerProps): React.JSX.Element {
-  const hasMissing = missingProviders.length > 0;
   const theme = useTheme();
+  const configured = providers.filter((p) => p.status === "ok");
 
   return (
     <Box flexDirection="column" marginTop={1} marginBottom={1}>
@@ -42,30 +42,24 @@ export function WelcomeBanner({
         <Text color={theme.success}>{cwd}</Text>
       </Box>
 
-      <Box justifyContent="center" marginTop={1} flexDirection="column">
-        <Box justifyContent="center">
-          <Text bold>Providers</Text>
-        </Box>
-        {providers.map((provider) => (
-          <Box key={provider.slug} justifyContent="center">
-            <Text color={provider.status === "ok" ? theme.success : "red"}>
-              {provider.status === "ok" ? "✓" : "✗"} {provider.slug}
-              {provider.status === "ok" ? " (authenticated)" : " (no auth)"}
-            </Text>
-          </Box>
-        ))}
-      </Box>
-
-      {hasMissing ? (
+      {configured.length > 0 ? (
         <Box justifyContent="center" marginTop={1} flexDirection="column">
           <Box justifyContent="center">
-            <Text color={theme.warning}>⚠ Missing auth for: {missingProviders.join(", ")}</Text>
+            <Text bold>Providers</Text>
           </Box>
-          <Box justifyContent="center">
-            <Text dimColor>Run: zeno auth {missingProviders[0]}</Text>
-          </Box>
+          {configured.map((provider) => (
+            <Box key={provider.slug} justifyContent="center">
+              <Text color={theme.success}>
+                {provider.slug}
+              </Text>
+            </Box>
+          ))}
         </Box>
-      ) : null}
+      ) : (
+        <Box justifyContent="center" marginTop={1}>
+          <Text dimColor>No providers configured</Text>
+        </Box>
+      )}
 
       <Box justifyContent="center" marginTop={1}>
         <Text dimColor>

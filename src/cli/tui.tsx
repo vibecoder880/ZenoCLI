@@ -589,7 +589,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
                 setAgentLines([`✗ Error: ${event.content}`]);
                 break;
               case "permission":
-                setAgentLines([`🔒 ${event.content}`]);
+                setAgentLines([`${event.content}`]);
                 break;
               case "checkpoint":
                 setAgentLines([`💾 ${event.content}`]);
