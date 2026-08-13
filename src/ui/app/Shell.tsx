@@ -19,6 +19,8 @@ import { Conversation, Greeting, type ChatLine } from "../components/Conversatio
 import { Composer } from "../components/Composer.js";
 import { Statusline, type StatusSection } from "../components/Statusline.js";
 import { KeyboardManager, type Focus } from "../keyboard/manager.js";
+import { OverlayLayer } from "../components/OverlayLayer.js";
+import type { OverlayState } from "../state/overlay-manager.js";
 
 export interface ShellProps {
   version: string;
@@ -39,6 +41,8 @@ export interface ShellProps {
   /** Custom capability snapshot for tests; defaults to the live terminal. */
   capabilities?: TerminalCapabilities;
   keyboard?: KeyboardManager;
+  /** Active overlay (Phase 8) rendered above the conversation. */
+  overlay?: OverlayState | null;
 }
 
 export function Shell({
@@ -57,6 +61,7 @@ export function Shell({
   onSubmit,
   capabilities,
   keyboard,
+  overlay,
 }: ShellProps): React.JSX.Element {
   const caps = capabilities ?? detectCapabilities();
 
@@ -112,6 +117,7 @@ export function Shell({
           onChange={onInputChange}
           onSubmit={onSubmit}
         />
+        {overlay ? <OverlayLayer overlay={overlay} unicode={unicode} /> : null}
         {!compact ? <Statusline sections={statusSections} /> : null}
       </Box>
     </UiThemeProvider>
