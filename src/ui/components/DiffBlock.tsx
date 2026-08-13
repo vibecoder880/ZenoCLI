@@ -109,7 +109,6 @@ export function DiffBlock({
         <DiffFileBlock
           key={file.path}
           file={file}
-          index={i}
           focused={i === focusedFileIndex}
           unicode={unicode}
           theme={theme}
