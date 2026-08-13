@@ -124,7 +124,7 @@ export class McpClient {
     await this.sendRequest("initialize", {
       protocolVersion: "2024-11-05",
       capabilities: {},
-      clientInfo: { name: "neurocli", version: "0.3.0" },
+      clientInfo: { name: "zenocli", version: "0.3.0" },
     });
 
     // Send initialized notification
