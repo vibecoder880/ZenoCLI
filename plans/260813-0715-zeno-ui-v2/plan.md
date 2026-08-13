@@ -1,6 +1,6 @@
 # Zeno UI v2 — plan
 
-**Status:** Phase 0–6 DONE
+**Status:** Phase 0–7 DONE
 **Branch:** khanh
 **Docs home:** `docs/ui/`
 **Source home:** `src/ui/`
@@ -43,3 +43,4 @@
 - Phase 4: `phase-04-composer.md`
 - Phase 5: `phase-05-activity-engine.md`
 - Phase 6: `phase-06-task-ux.md`
+- Phase 7: `phase-07-diff-ux.md`
