@@ -1,6 +1,6 @@
 # Zeno UI v2 — plan
 
-**Status:** Phase 0–13 DONE
+**Status:** Phase 0–14 DONE ✅
 **Branch:** khanh
 **Docs home:** `docs/ui/`
 **Source home:** `src/ui/`
@@ -50,3 +50,4 @@
 - Phase 11: `phase-11-theme-engine.md`
 - Phase 12: `phase-12-responsive.md`
 - Phase 13: `phase-13-performance.md`
+- Phase 14: `phase-14-polish.md`
