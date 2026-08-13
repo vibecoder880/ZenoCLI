@@ -22,6 +22,7 @@ import { Activity } from "./Activity.js";
 import type { ActivityLine } from "../activity/types.js";
 import { TaskBlock } from "./TaskBlock.js";
 import type { TaskItem } from "./TaskBlock.js";
+import { DiffBlock } from "./DiffBlock.js";
 
 export interface ChatLine {
   id: string;
@@ -160,6 +161,10 @@ export interface ConversationProps {
   taskExpanded?: boolean;
   /** Title for the task block. */
   taskTitle?: string;
+  /** Raw unified diff text for inline diff display (Phase 7). */
+  diffText?: string;
+  /** Index of the focused file in the diff block. */
+  focusedDiffFileIndex?: number;
 }
 
 export function Conversation({
@@ -172,6 +177,8 @@ export function Conversation({
   taskItems,
   taskExpanded = false,
   taskTitle = "Plan",
+  diffText,
+  focusedDiffFileIndex = 0,
 }: ConversationProps): React.JSX.Element {
   const theme = useUiTheme();
 
@@ -225,6 +232,9 @@ export function Conversation({
       ) : null}
       {taskItems && taskItems.length > 0 ? (
         <TaskBlock title={taskTitle} items={taskItems} expanded={taskExpanded} unicode={unicode} />
+      ) : null}
+      {diffText ? (
+        <DiffBlock diffText={diffText} unicode={unicode} focusedFileIndex={focusedDiffFileIndex} />
       ) : null}
     </Box>
   );
