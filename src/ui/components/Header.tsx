@@ -11,6 +11,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import { createRequire } from "node:module";
 import { useUiTheme } from "../theme/provider.js";
+import type { WidthTier } from "../terminal/resize.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -29,8 +30,8 @@ export interface HeaderProps {
   /** Runtime status: "thinking" | "agents" | undefined (idle). */
   status?: "thinking" | "agents" | "idle" | undefined;
   agents?: number;
-  /** True when < 80 columns (docs/ui/responsive.md). */
-  compact?: boolean;
+  /** Width tier for responsive layout (docs/ui/responsive.md). */
+  widthTier?: WidthTier;
 }
 
 function statusText(status: HeaderProps["status"], agents?: number): string {
@@ -53,10 +54,14 @@ export function Header({
   contextPct,
   status,
   agents,
-  compact = false,
+  widthTier = "medium",
 }: HeaderProps): React.JSX.Element {
   const theme = useUiTheme();
   const statusLine = statusText(status, agents);
+
+  // Width-tier responsive layout (docs/ui/responsive.md § Width tiers)
+  const narrow = widthTier === "narrow";
+  const showContext = widthTier === "wide" || widthTier === "ultrawide";
 
   const leftLine1 = (
     <>
@@ -77,13 +82,25 @@ export function Header({
     </>
   );
 
-  const line2 = compact ? (
-    <Text dimColor>{cwd}</Text>
-  ) : (
+  // Narrow: single line only (brand + model + branch)
+  if (narrow) {
+    return (
+      <Box flexDirection="column" marginBottom={1}>
+        <Box justifyContent="space-between">
+          {leftLine1}
+          {rightLine1}
+        </Box>
+      </Box>
+    );
+  }
+
+  const line2 = showContext ? (
     <>
       <Text dimColor>{cwd}</Text>
       <Text dimColor> · {contextPct}%</Text>
     </>
+  ) : (
+    <Text dimColor>{cwd}</Text>
   );
 
   return (

@@ -13,7 +13,7 @@ import React, { useMemo } from "react";
 import { Box } from "ink";
 import { UiThemeProvider } from "../theme/provider.js";
 import { detectCapabilities, type TerminalCapabilities } from "../terminal/system.js";
-import { isCompact } from "../terminal/resize.js";
+import { isCompact, widthTier, type WidthTier } from "../terminal/resize.js";
 import { Header } from "../components/Header.js";
 import { Conversation, Greeting, type ChatLine } from "../components/Conversation.js";
 import { Composer } from "../components/Composer.js";
@@ -74,6 +74,7 @@ export function Shell({
     keyboard.setFocus(focus);
   }
 
+  const tier: WidthTier = widthTier(caps.columns);
   const compact = isCompact(caps.columns);
   const unicode = caps.unicode;
 
@@ -83,12 +84,16 @@ export function Shell({
       sections.push({ key: "branch", text: branch });
     }
     sections.push({ key: "model", text: model, emphasis: "accent" });
-    sections.push({ key: "context", text: `${contextPct}%` });
-    if (!compact) {
+    // Context % shows at wide tier and above (docs/ui/responsive.md).
+    if (tier === "wide" || tier === "ultrawide") {
+      sections.push({ key: "context", text: `${contextPct}%` });
+    }
+    // Tokens, cost, duration show at ultrawide tier.
+    if (tier === "ultrawide") {
       sections.push({ key: "tokens", text: `${messages.length} msgs` });
     }
     return sections;
-  }, [branch, model, contextPct, compact, messages.length]);
+  }, [branch, model, contextPct, tier, messages.length]);
 
   return (
     <UiThemeProvider
@@ -105,7 +110,7 @@ export function Shell({
           cwd={cwd}
           contextPct={contextPct}
           status={busy ? "thinking" : "idle"}
-          compact={compact}
+          widthTier={tier}
         />
         {firstRun ? (
           <Greeting version={version} cwd={cwd} providerCount={providersReady} />

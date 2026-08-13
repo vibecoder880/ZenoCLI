@@ -14,8 +14,8 @@ const baseProps = {
 };
 
 describe("<Header />", () => {
-  it("renders brand, version, model, branch, cwd, and context", () => {
-    const { lastFrame } = render(<Header {...baseProps} />);
+  it("renders brand, version, model, branch, cwd, and context in wide tier", () => {
+    const { lastFrame } = render(<Header {...baseProps} widthTier="wide" />);
     const frame = lastFrame();
     expect(frame).toContain("ZENO");
     expect(frame).toContain("v0.8.0");
@@ -35,12 +35,27 @@ describe("<Header />", () => {
     expect(lastFrame()).toContain("2 agents");
   });
 
-  it("collapses to essentials when compact", () => {
-    const { lastFrame } = render(<Header {...baseProps} compact contextPct={18} />);
+  it("collapses to essentials when narrow", () => {
+    const { lastFrame } = render(<Header {...baseProps} widthTier="narrow" />);
     const frame = lastFrame();
     expect(frame).toContain("ZENO");
     expect(frame).toContain("claude-sonnet-5");
-    // Context % is dropped in compact mode.
+    // Narrow: no cwd, no context %.
+    expect(frame).not.toContain("/home/ubuntu/ZenoCLI");
     expect(frame).not.toContain("18%");
+  });
+
+  it("shows cwd but no context in medium tier", () => {
+    const { lastFrame } = render(<Header {...baseProps} widthTier="medium" />);
+    const frame = lastFrame();
+    expect(frame).toContain("/home/ubuntu/ZenoCLI");
+    expect(frame).not.toContain("18%");
+  });
+
+  it("shows cwd and context in wide tier", () => {
+    const { lastFrame } = render(<Header {...baseProps} widthTier="wide" />);
+    const frame = lastFrame();
+    expect(frame).toContain("/home/ubuntu/ZenoCLI");
+    expect(frame).toContain("18%");
   });
 });
