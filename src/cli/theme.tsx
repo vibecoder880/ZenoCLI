@@ -34,9 +34,10 @@ export const LIGHT_THEME: ThemePalette = {
 
 /** Build a palette from config.theme, merging onto the base preset. */
 export function resolveTheme(
-  config?: { theme?: { mode?: "dark" | "light"; palette?: Partial<ThemePalette> } }
+  config?: { theme?: { mode?: "system" | "dark" | "light" | "named"; palette?: Partial<ThemePalette> } }
 ): ThemePalette {
   const mode = config?.theme?.mode ?? "dark";
+  // v1 only supports dark/light; system/named fall back to dark.
   const base = mode === "light" ? LIGHT_THEME : DARK_THEME;
   return { ...base, ...(config?.theme?.palette ?? {}) };
 }

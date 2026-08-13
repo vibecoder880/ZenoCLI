@@ -1,0 +1,13 @@
+{
+  "name": "zeno-dark",
+  "base": "dark",
+  "colors": {
+    "text": "#e6e6e6",
+    "muted": "#9ca3af",
+    "subtle": "#6b7280",
+    "accent": "#a78bfa",
+    "success": "#6ee7b7",
+    "warning": "#f5d04c",
+    "error": "#f87171"
+  }
+}

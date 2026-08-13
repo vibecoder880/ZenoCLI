@@ -143,4 +143,21 @@ export function themeSourceFrom(
   return { colorLevel, nativeBackground: backgroundDetected };
 }
 
+/**
+ * List all available theme names (built-in + custom).
+ * Built-in themes are hardcoded; custom themes are loaded from ~/.zeno/themes/.
+ */
+export async function listThemes(): Promise<string[]> {
+  const builtIn: ThemeName[] = [
+    "zeno-dark", "zeno-light", "tokyo", "nord", "dracula",
+  ];
+  try {
+    const { loadCustomThemes } = await import("./custom-themes.js");
+    const custom = await loadCustomThemes();
+    return [...builtIn, ...custom.map((t) => t.name)];
+  } catch {
+    return [...builtIn];
+  }
+}
+
 export { SYSTEM_TOKEN, ZENO_DARK_TOKENS, ZENO_LIGHT_TOKENS };

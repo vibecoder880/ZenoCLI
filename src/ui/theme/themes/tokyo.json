@@ -1,0 +1,13 @@
+{
+  "name": "tokyo",
+  "base": "dark",
+  "colors": {
+    "text": "#d5d6db",
+    "muted": "#787c99",
+    "subtle": "#565a73",
+    "accent": "#7aa2f7",
+    "success": "#9ece6a",
+    "warning": "#e0af68",
+    "error": "#f7768e"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "zeno-light",
+  "base": "light",
+  "colors": {
+    "text": "#1f2430",
+    "muted": "#6b7280",
+    "subtle": "#9ca3af",
+    "accent": "#7c5cbf",
+    "success": "#15803d",
+    "warning": "#b45309",
+    "error": "#dc2626"
+  }
+}

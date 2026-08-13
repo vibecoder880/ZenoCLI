@@ -33,6 +33,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/resume", description: "Resume previous session", category: "session" },
   { command: "/fork", description: "Fork current session", category: "session" },
   { command: "/permission", description: "Cycle permission mode", category: "mode" },
+  { command: "/theme", description: "Switch UI theme", category: "mode" },
   { command: "/undo", description: "Undo last file edit (checkpoint)", category: "session" },
   { command: "/exit", description: "Quit ZenoCLI", category: "mode" }
 ];

@@ -47,16 +47,23 @@ export interface ZenoConfig {
     /** Optional model override for this command. */
     model?: string;
   }>;
-  /** TUI theme. */
+  /** TUI theme (v1 legacy + v2 engine). */
   theme?: {
-    /** dark (default) or light. */
-    mode?: "dark" | "light";
-    /** Optional color overrides (Ink color names). */
+    /** Theme mode: system (default), dark, light, or named. */
+    mode?: "system" | "dark" | "light" | "named";
+    /** When mode = "named": zeno-dark, zeno-light, tokyo, nord, dracula, or custom. */
+    name?: string;
+    /** Optional semantic-token overrides (v2 format). */
     palette?: {
-      primary?: string;
+      text?: string;
+      muted?: string;
+      subtle?: string;
+      accent?: string;
       success?: string;
       warning?: string;
-      muted?: string;
+      error?: string;
+      /** v1 legacy keys (mapped to v2 equivalents on load). */
+      primary?: string;
     };
   };
   /** Economy-tier model used for low-stakes subagent/summary tasks. */
@@ -128,7 +135,7 @@ export const DEFAULT_CONFIG: ZenoConfig = {
   metadataModel: "openai/gpt-5.6-luna",
   commands: {},
   theme: {
-    mode: "dark"
+    mode: "system"
   },
   budget: {
     dailyLimitUsd: 0,

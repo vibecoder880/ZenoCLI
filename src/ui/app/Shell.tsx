@@ -21,6 +21,7 @@ import { Statusline, type StatusSection } from "../components/Statusline.js";
 import { KeyboardManager, type Focus } from "../keyboard/manager.js";
 import { OverlayLayer } from "../components/OverlayLayer.js";
 import type { OverlayState } from "../state/overlay-manager.js";
+import type { ThemeConfig } from "../theme/engine.js";
 
 export interface ShellProps {
   version: string;
@@ -43,6 +44,8 @@ export interface ShellProps {
   keyboard?: KeyboardManager;
   /** Active overlay (Phase 8) rendered above the conversation. */
   overlay?: OverlayState | null;
+  /** Theme configuration from config.toml. */
+  themeConfig?: ThemeConfig;
 }
 
 export function Shell({
@@ -62,6 +65,7 @@ export function Shell({
   capabilities,
   keyboard,
   overlay,
+  themeConfig,
 }: ShellProps): React.JSX.Element {
   const caps = capabilities ?? detectCapabilities();
 
@@ -88,7 +92,7 @@ export function Shell({
 
   return (
     <UiThemeProvider
-      config={undefined}
+      config={themeConfig}
       source={{ colorLevel: caps.colorLevel, nativeBackground: caps.nativeBackground }}
       noColor={caps.noColor}
     >

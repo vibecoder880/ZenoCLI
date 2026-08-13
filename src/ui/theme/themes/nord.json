@@ -1,0 +1,13 @@
+{
+  "name": "nord",
+  "base": "dark",
+  "colors": {
+    "text": "#d8dee9",
+    "muted": "#4c566a",
+    "subtle": "#434c5e",
+    "accent": "#88c0d0",
+    "success": "#a3be8c",
+    "warning": "#ebcb8b",
+    "error": "#bf616a"
+  }
+}
