@@ -1,6 +1,6 @@
 # Phase 12 — Responsive
 
-**Status:** IN PROGRESS
+**Status:** DONE
 **Branch:** khanh
 
 ## Goal
