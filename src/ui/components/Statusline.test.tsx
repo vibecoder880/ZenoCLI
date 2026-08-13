@@ -49,4 +49,18 @@ describe("<Statusline />", () => {
     const { lastFrame } = render(<Statusline sections={[]} />);
     expect(lastFrame()).toBe("");
   });
+
+  it("renders agent count when provided", () => {
+    const { lastFrame } = render(
+      <Statusline sections={[{ key: "model", text: "claude-5" }]} agentCount={2} />,
+    );
+    expect(lastFrame()).toContain("2 agents");
+  });
+
+  it("renders singular agent count", () => {
+    const { lastFrame } = render(
+      <Statusline sections={[{ key: "model", text: "claude-5" }]} agentCount={1} />,
+    );
+    expect(lastFrame()).toContain("1 agent");
+  });
 });

@@ -23,11 +23,13 @@ export interface StatuslineProps {
   duration?: string;
   /** True to truncate to essential sections immediately. */
   compact?: boolean;
+  /** Number of running background agents. */
+  agentCount?: number;
 }
 
 /** Which sections survive at narrow widths (docs/ui/responsive.md). */
 const NARROW_ORDER = ["model", "context", "cost", "duration"] as const;
-const WIDE_ORDER = ["branch", "model", "context", "tokens", "cost", "duration"] as const;
+const WIDE_ORDER = ["branch", "model", "context", "tokens", "cost", "duration", "agents"] as const;
 
 function rankOf(key: string): number {
   const idx = WIDE_ORDER.indexOf(key as (typeof WIDE_ORDER)[number]);
@@ -49,7 +51,7 @@ function emphasisColor(emphasis: StatusSection["emphasis"]): string | undefined 
   }
 }
 
-export function Statusline({ sections, duration, compact = false }: StatuslineProps): React.JSX.Element | null {
+export function Statusline({ sections, duration, compact = false, agentCount }: StatuslineProps): React.JSX.Element | null {
   const theme = useUiTheme();
 
   let ordered = [...sections].sort((a, b) => rankOf(a.key) - rankOf(b.key));
@@ -61,6 +63,10 @@ export function Statusline({ sections, duration, compact = false }: StatuslinePr
 
   if (duration) {
     ordered.push({ key: "duration", text: duration });
+  }
+
+  if (agentCount && agentCount > 0) {
+    ordered.push({ key: "agents", text: `${agentCount} agent${agentCount === 1 ? "" : "s"}`, emphasis: "accent" });
   }
 
   if (ordered.length === 0) {
