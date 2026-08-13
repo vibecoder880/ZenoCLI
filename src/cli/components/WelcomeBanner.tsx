@@ -18,7 +18,6 @@ export interface WelcomeBannerProps {
   version?: string;
   cwd: string;
   providers: Array<{ slug: string; status: "ok" | "missing" }>;
-  missingProviders: string[];
   onDismiss?: () => void;
 }
 
@@ -26,7 +25,6 @@ export function WelcomeBanner({
   version = VERSION,
   cwd,
   providers,
-  missingProviders,
   onDismiss
 }: WelcomeBannerProps): React.JSX.Element {
   const theme = useTheme();

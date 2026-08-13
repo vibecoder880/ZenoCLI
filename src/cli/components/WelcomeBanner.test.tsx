@@ -13,7 +13,6 @@ describe("<WelcomeBanner />", () => {
           { slug: "openai", status: "ok" },
           { slug: "anthropic", status: "missing" }
         ]}
-        missingProviders={["anthropic"]}
       />,
     );
     const frame = lastFrame();
@@ -28,7 +27,6 @@ describe("<WelcomeBanner />", () => {
         version="0.2.0"
         cwd="/tmp"
         providers={[]}
-        missingProviders={[]}
       />,
     );
     const frame = lastFrame();
@@ -44,7 +42,6 @@ describe("<WelcomeBanner />", () => {
           { slug: "openai", status: "ok" },
           { slug: "anthropic", status: "missing" }
         ]}
-        missingProviders={["anthropic"]}
       />,
     );
     const frame = lastFrame();
@@ -60,7 +57,6 @@ describe("<WelcomeBanner />", () => {
         version="0.2.0"
         cwd="/tmp"
         providers={[{ slug: "openai", status: "missing" }]}
-        missingProviders={["openai"]}
       />,
     );
     expect(lastFrame()).toContain("No providers configured");
@@ -72,7 +68,6 @@ describe("<WelcomeBanner />", () => {
         version="0.2.0"
         cwd="/tmp"
         providers={[{ slug: "openai", status: "ok" }]}
-        missingProviders={[]}
       />,
     );
     expect(lastFrame()).not.toContain("Missing auth");

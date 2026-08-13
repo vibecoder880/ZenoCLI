@@ -9,7 +9,7 @@ import { SlashMenu } from "./components/SlashMenu.js";
 import { Prompt } from "./components/Prompt.js";
 import { WelcomeBanner } from "./components/WelcomeBanner.js";
 import { useFirstRun } from "./hooks/useFirstRun.js";
-import { AuthProfileStore, getKnownProviders, listMissingProviders } from "../auth/auth-profiles.js";
+import { AuthProfileStore, getKnownProviders } from "../auth/auth-profiles.js";
 import { refreshOAuthIfNeeded } from "../auth/refresh.js";
 import { createProvider } from "../providers/index.js";
 import type { ChatMessage } from "../providers/base.js";
@@ -91,7 +91,6 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
 
   // First-run detection
   const firstRun = useFirstRun(config);
-  const missingProviders = useMemo(() => listMissingProviders(getKnownProviders(config)), [config]);
   const providerStatus = useMemo(() => {
     const store = new AuthProfileStore();
     return getKnownProviders(config).map((slug) => ({
@@ -769,7 +768,6 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         <WelcomeBanner
           cwd={cwd}
           providers={providerStatus}
-          missingProviders={missingProviders}
         />
       ) : null}
       <AgentStatus lines={agentLines} />
