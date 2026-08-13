@@ -1,6 +1,6 @@
 # Zeno UI v2 — plan
 
-**Status:** Phase 0–9 DONE
+**Status:** Phase 0–10 DONE
 **Branch:** khanh
 **Docs home:** `docs/ui/`
 **Source home:** `src/ui/`
@@ -46,3 +46,4 @@
 - Phase 7: `phase-07-diff-ux.md`
 - Phase 8: `phase-08-overlay-system.md`
 - Phase 9: `phase-09-agent-ux.md`
+- Phase 10: `phase-10-statusline.md`
