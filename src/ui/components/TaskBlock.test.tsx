@@ -4,8 +4,6 @@ import { render } from "ink-testing-library";
 import {
   TaskBlock,
   createTaskItem,
-  type TaskItem,
-  type TaskStatus,
 } from "./TaskBlock.js";
 
 // Mock the theme provider

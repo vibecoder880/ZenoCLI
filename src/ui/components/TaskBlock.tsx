@@ -77,7 +77,6 @@ export function TaskBlock({
   items,
   expanded = false,
   unicode,
-  onToggle,
 }: TaskBlockProps): React.JSX.Element | null {
   const theme = useUiTheme();
   const doneCount = items.filter((i) => i.status === "done").length;
