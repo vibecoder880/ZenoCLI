@@ -30,7 +30,7 @@ describe("<WelcomeBanner />", () => {
       />,
     );
     const frame = lastFrame();
-    expect(frame).toContain("███████╗");
+    expect(frame).toContain("███████╗ ███████╗ ███╗   ██╗");
   });
 
   it("only shows configured providers, not missing ones", () => {

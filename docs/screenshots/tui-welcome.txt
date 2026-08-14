@@ -1,22 +1,17 @@
- ZenoCLI v0.7.8 · openai/gpt-5.6-terra · 🔒 Default (prompt for writes) · $0.0000 · 0 tok · 0 hist
+ ZenoCLI v0.7.8 · Default (prompt for writes) · $0.0000 · 0 tok · 0 hist
  session abc123 · chat
 
-                        ██╗   ██╗███████╗███╗   ██╗ ██████╗
-                        ██║   ██║██╔════╝████╗  ██║██╔═══██╗
-                        ██║   ██║█████╗  ██╔██╗ ██║██║   ██║
-                        ╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║   ██║
-                         ╚████╔╝ ███████╗██║ ╚████║╚██████╔╝
-                          ╚═══╝  ╚══════╝╚═╝  ╚═══╝ ╚═════╝
+                   ███████╗ ███████╗ ███╗   ██╗  ██████╗
+                   ╚══███╔╝ ██╔════╝ ████╗  ██║ ██╔═══██╗
+                     ███╔╝  █████╗   ██╔██╗ ██║ ██║   ██║
+                    ███╔╝   ██╔══╝   ██║╚██╗██║ ██║   ██║
+                   ███████╗ ███████╗ ██║ ╚████║ ╚██████╔╝
+                   ╚══════╝ ╚══════╝ ╚═╝  ╚═══╝  ╚═════╝
 
                             v0.7.8 · /path/to/project
 
                                 Providers
-                     ✗ openai (no auth)
-                     ✗ anthropic (no auth)
-                     ✗ google (no auth)
-
-                   ⚠ Missing auth for: openai, anthropic, google
-                          Run: zeno auth openai
+                                  openai
 
         Type a prompt to begin. Try /help for commands. Banner dismisses on first prompt.
 
