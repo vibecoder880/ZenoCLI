@@ -32,6 +32,7 @@ import { CheckpointManager } from "../safety/checkpoints.js";
 import { ALL_PERMISSION_MODES, nextPermissionMode, permissionModeLabel, type PermissionMode } from "../safety/permissions.js";
 import { Shell as V2Shell } from "../ui/app/Shell.js";
 import { VERSION } from "../ui/components/Header.js";
+import { listThemes } from "../ui/theme/engine.js";
 
 interface LaunchOptions {
   model: string;
@@ -62,6 +63,8 @@ function createLine(role: ChatLine["role"], content: string): ChatLine {
 function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps): React.JSX.Element {
   const { exit } = useApp();
   const config = useMemo(() => loadConfig(), []);
+  /** Whether the Zeno UI v2 shell is active (opt-in via ZENO_UI_V2=1). */
+  const v2 = Boolean(process.env.ZENO_UI_V2);
   const requestedRoute = useMemo(
     () => resolveModelRoute(config, model, provider),
     [config, model, provider]
@@ -80,6 +83,7 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   const [screen, setScreen] = useState<ScreenMode>("welcome");
   const [historyCount, setHistoryCount] = useState(() => listHistoryEntries(200).length);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>(config.permission?.mode ?? "default");
+  const [themeName, setThemeName] = useState<string | undefined>(config.theme?.name);
   const slashCommands = useMemo(() => filterSlashCommands(input, config), [input, config]);
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
 
@@ -106,6 +110,12 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   // Read package version once
   useEffect(() => {
     // Version is read at module load by Header; nothing async to do here.
+  }, []);
+
+  // Hydrate the custom-theme cache on startup so a `named` theme from
+  // config.toml resolves on the first render (listThemes also primes it).
+  useEffect(() => {
+    void listThemes();
   }, []);
 
   // Initialize session and context on mount
@@ -320,6 +330,28 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
       return true;
     }
 
+    if (command.command === "/theme") {
+      try {
+        const themes = await listThemes();
+        if (themes.length === 0) {
+          setAgentLines(["No themes available."]);
+          setInput("");
+          return true;
+        }
+        const idx = themeName ? themes.indexOf(themeName) : -1;
+        const next = themes[(idx + 1) % themes.length];
+        setThemeName(next);
+        setAgentLines([
+          `Theme: ${next}`,
+          `Available: ${themes.join(", ")}`
+        ]);
+      } catch {
+        setAgentLines(["Could not list themes."]);
+      }
+      setInput("");
+      return true;
+    }
+
     if (command.command === "/undo") {
       const result = checkpointsRef.current.undo();
       if (result) {
@@ -431,9 +463,13 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
     }
 
     return false;
-  }, [activeRoute, config, cwd, exit, messages, model, onExit, permissionMode, provider, requestedRoute, sessionCost, tokenCount]);
+  }, [activeRoute, config, cwd, exit, messages, model, onExit, permissionMode, provider, requestedRoute, sessionCost, themeName, tokenCount]);
 
+  // The v2 shell owns keyboard input (Composer/SlashMenu). When v2 is active
+  // this v1 handler must not register — two handlers would both receive every
+  // key (Esc would exit the app, slash-command Enter would fire twice).
   useInput((inputChar, key) => {
+    if (v2) return;
     if (isBusy && !key.escape) return;
 
     // Esc: dismiss welcome or exit
@@ -710,7 +746,6 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
   }, []);
 
   const showWelcome = screen === "welcome" && firstRun.isFirstRun;
-  const v2 = Boolean(process.env.ZENO_UI_V2);
   // Git branch for the v2 header statusline; best-effort, read on each render.
   const branchName = useMemo(() => {
     if (!cwd) return "";
@@ -742,6 +777,11 @@ function ChatApp({ model, provider, cwd, initialPrompt, onExit }: ChatAppProps):
         busy={isBusy}
         firstRun={showWelcome}
         providersReady={providerStatus.filter((p) => p.status === "ok").length}
+        themeConfig={
+          themeName
+            ? { mode: "named", name: themeName, palette: config.theme?.palette }
+            : config.theme
+        }
         onInputChange={setInput}
         onSubmit={(value) => {
           void submitPrompt(value);

@@ -41,4 +41,19 @@ describe("applySuggestion", () => {
   it("appends when there is no trigger", () => {
     expect(applySuggestion("plain", suggestion)).toBe("plain/model ");
   });
+
+  it("preserves the '@' trigger for file suggestions", () => {
+    const file: Suggestion = { value: "functions/", label: "functions/" };
+    expect(applySuggestion("@fur", file)).toBe("@functions/ ");
+  });
+
+  it("preserves the '!' trigger for shell shortcuts", () => {
+    const shell: Suggestion = { value: "npm test", label: "npm test" };
+    expect(applySuggestion("run !npm", shell)).toBe("run !npm test ");
+  });
+
+  it("keeps a prefix before an '@' trigger", () => {
+    const file: Suggestion = { value: "src/core.ts", label: "src/core.ts" };
+    expect(applySuggestion("file pick @src/co", file)).toBe("file pick @src/core.ts ");
+  });
 });

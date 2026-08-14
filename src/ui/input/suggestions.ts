@@ -136,8 +136,10 @@ export function applySuggestion(input: string, suggestion: Suggestion): string {
   if (trigger === null) {
     return input + suggestion.value + " ";
   }
-  // `suggestion.value` already carries its own trigger char (e.g. "/model"),
-  // so the raw token (not the trigger) is replaced.
-  const insertion = trigger.prefix + suggestion.value;
+  // "/" suggestions already carry their own trigger char (e.g. "/model").
+  // "@" and "!" values (file paths, shell shortcuts) do not, so re-insert the
+  // trigger char before the completed token to keep the reference valid.
+  const triggerChar = trigger.kind === "/" ? "" : trigger.kind;
+  const insertion = trigger.prefix + triggerChar + suggestion.value;
   return insertion + " ";
 }

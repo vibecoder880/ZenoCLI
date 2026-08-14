@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { render } from "ink-testing-library";
-import { MarkdownBlock } from "./markdown-blocks.jsx";
+import { MarkdownBlock, safeOsc8Url } from "./markdown-blocks.jsx";
 import { parseMarkdown } from "./markdown-parse.js";
 import { UiThemeProvider } from "../theme/provider.js";
 
@@ -78,6 +78,38 @@ describe("<MarkdownBlock />", () => {
     const frame = frameOf("@@ -1 +1 @@\n-old\n+new");
     expect(frame).toContain("-old");
     expect(frame).toContain("+new");
+  });
+
+  it("falls back to plain text when OSC 8 renders and URL is unsafe", () => {
+    // A control character in the URL must not be embedded in the escape
+    // sequence; it renders as plain `text (url)` instead.
+    const frame = frameOf("[x](https://example.com/a\bb)");
+    expect(frame).toContain("x (https://example.com");
+    expect(frame).not.toContain("]8;;");
+  });
+
+  describe("safeOsc8Url", () => {
+    it("accepts http/https/mailto links", () => {
+      expect(safeOsc8Url("https://example.com")).toBe("https://example.com");
+      expect(safeOsc8Url("http://a.b")).toBe("http://a.b");
+      expect(safeOsc8Url("mailto:a@b.c")).toBe("mailto:a@b.c");
+    });
+
+    it("rejects non-web schemes", () => {
+      expect(safeOsc8Url("file:///etc/passwd")).toBeNull();
+      expect(safeOsc8Url("data:text/html,x")).toBeNull();
+      expect(safeOsc8Url("javascript:alert(1)")).toBeNull();
+    });
+
+    it("rejects control characters", () => {
+      expect(safeOsc8Url("https://example.com/ab")).toBeNull();
+      expect(safeOsc8Url("https://example.com/a\tb")).toBeNull();
+    });
+
+    it("rejects empty and oversized URLs", () => {
+      expect(safeOsc8Url("")).toBeNull();
+      expect(safeOsc8Url(`https://example.com/${"a".repeat(2001)}`)).toBeNull();
+    });
   });
 
   it("renders without color under NO_COLOR", () => {

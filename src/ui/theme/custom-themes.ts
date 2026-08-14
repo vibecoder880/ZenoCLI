@@ -1,13 +1,13 @@
 /**
  * Zeno UI v2 — custom theme loader.
  *
- * Scans `~/.zeno/themes/*.json` for user-defined themes and returns them
+ * Scans `~/.zenocli/themes/*.json` for user-defined themes and returns them
  * as ZenoTokens alongside built-in themes. Malformed files are skipped.
  */
 
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { homedir } from "node:os";
+import { getAppDataDirectory } from "../../storage/paths.js";
 import type { ZenoTokens } from "./tokens.js";
 
 export interface CustomTheme {
@@ -58,11 +58,12 @@ export function validateThemeJson(
 }
 
 /**
- * Load all valid custom themes from `~/.zeno/themes/`.
- * Returns empty array if the directory doesn't exist or has no valid themes.
+ * Load all valid custom themes from the app data themes directory
+ * (~/.zenocli/themes/). Returns empty array if the directory doesn't exist or
+ * has no valid themes.
  */
 export async function loadCustomThemes(): Promise<CustomTheme[]> {
-  const themesDir = join(homedir(), ".zeno", "themes");
+  const themesDir = join(getAppDataDirectory(), "themes");
   let files: string[];
   try {
     files = await readdir(themesDir);

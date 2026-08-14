@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveTheme, themeSourceFrom } from "./engine.js";
+import { resolveTheme, themeSourceFrom, hydrateCustomThemes } from "./engine.js";
 import { ZENO_DARK_TOKENS, ZENO_LIGHT_TOKENS } from "./tokens.js";
 
 describe("resolveTheme", () => {
@@ -62,5 +62,16 @@ describe("themeSourceFrom", () => {
       colorLevel: "truecolor",
       nativeBackground: true,
     });
+  });
+});
+
+describe("custom theme hydration", () => {
+  it("resolves a hydrated custom theme by name", () => {
+    hydrateCustomThemes([
+      { name: "my-theme", colors: { text: "#111111", muted: "#222222", subtle: "#333333", accent: "#aa5500", success: "#22cc22", warning: "#cccc22", error: "#cc2222" } },
+    ]);
+    const { palette } = resolveTheme({ mode: "named", name: "my-theme" });
+    expect(palette.accent).toBe("#aa5500");
+    expect(palette.text).toBe("#111111");
   });
 });

@@ -19,7 +19,8 @@ export type ThemeName = "zeno-dark" | "zeno-light" | "tokyo" | "nord" | "dracula
 
 export interface ThemeConfig {
   mode?: ThemeMode;
-  name?: ThemeName;
+  /** Built-in name (zeno-dark, tokyo…) or a custom theme name. */
+  name?: string;
   /** Optional semantic-token overrides. */
   palette?: Partial<ZenoTokens>;
 }
@@ -35,7 +36,7 @@ export interface ThemeSource {
  * Base token set for a named theme. `system`/`dark`/`light` get their
  * defaults; named themes select from the built-in registry.
  */
-function baseTokens(mode: ThemeMode, name?: ThemeName): ZenoTokens {
+function baseTokens(mode: ThemeMode, name?: string): ZenoTokens {
   switch (mode) {
     case "dark":
       return { ...ZENO_DARK_TOKENS };
@@ -50,7 +51,7 @@ function baseTokens(mode: ThemeMode, name?: ThemeName): ZenoTokens {
 }
 
 /** Built-in named palettes (docs/ui/theme.md § Phases — Phase 11 adds JSON loading). */
-function themedTokens(name?: ThemeName): ZenoTokens {
+function themedTokens(name?: string): ZenoTokens {
   switch (name) {
     case "zeno-light":
       return { ...ZENO_LIGHT_TOKENS };
@@ -85,8 +86,28 @@ function themedTokens(name?: ThemeName): ZenoTokens {
         error: "#ff5555",
       };
     default:
-      return { ...ZENO_DARK_TOKENS };
+      return { ...customTokens(name) ?? ZENO_DARK_TOKENS };
   }
+}
+
+/**
+ * Synchronously resolved custom theme tokens, hydrated from disk by
+ * `loadCustomThemes()` (see `listThemes`). Populated on first load so
+ * `resolveTheme` stays synchronous in the render path.
+ */
+let customTokenCache = new Map<string, ZenoTokens>();
+
+/** Look up a custom theme's tokens from the hydrated cache. */
+function customTokens(name?: string): ZenoTokens | undefined {
+  if (!name) return undefined;
+  return customTokenCache.get(name);
+}
+
+/** Replace the custom-token cache (used by listThemes and tests). */
+export function hydrateCustomThemes(
+  themes: Array<{ name: string; colors: ZenoTokens }>,
+): void {
+  customTokenCache = new Map(themes.map((t) => [t.name, t.colors]));
 }
 
 /**
@@ -145,7 +166,8 @@ export function themeSourceFrom(
 
 /**
  * List all available theme names (built-in + custom).
- * Built-in themes are hardcoded; custom themes are loaded from ~/.zeno/themes/.
+ * Built-in themes are hardcoded; custom themes are loaded from
+ * ~/.zenocli/themes/ and hydrated into the resolve cache.
  */
 export async function listThemes(): Promise<string[]> {
   const builtIn: ThemeName[] = [
@@ -154,6 +176,7 @@ export async function listThemes(): Promise<string[]> {
   try {
     const { loadCustomThemes } = await import("./custom-themes.js");
     const custom = await loadCustomThemes();
+    hydrateCustomThemes(custom);
     return [...builtIn, ...custom.map((t) => t.name)];
   } catch {
     return [...builtIn];
