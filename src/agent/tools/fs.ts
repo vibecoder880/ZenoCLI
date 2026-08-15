@@ -3,7 +3,7 @@
  * All registered with the dynamic ToolRegistry.
  */
 
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from "../tool-registry.js";
 
@@ -13,8 +13,8 @@ import type { ToolDefinition, ToolExecutionContext, ToolResult } from "../tool-r
  * Resolve a tool-supplied path against the working directory and confine the
  * result to the workspace. Prevents path traversal: inputs such as "/etc",
  * "C:\\...", or "../../.." resolve outside `cwd` and are rejected instead of
- * reaching the filesystem. Symlinked entries inside the workspace are still
- * followed; the containment check is lexical on the resolved path.
+ * reaching the filesystem.
+ * This is the LEXICAL fast-pass (no realpath) — used as a first check.
  */
 function resolvePath(cwd: string, targetPath: string): string {
   const resolved = path.isAbsolute(targetPath)
@@ -29,6 +29,41 @@ function resolvePath(cwd: string, targetPath: string): string {
   }
 
   return resolved;
+}
+
+/**
+ * Resolve a path with realpath containment check.
+ * - realpath-resolves the workspace root (cwd)
+ * - realpath-resolves the parent chain + target (handles non-existent targets)
+ * - re-checks containment using the real paths
+ * - returns the real-resolved path for safe I/O (avoids TOCTOU)
+ */
+async function resolveRealPath(cwd: string, targetPath: string): Promise<string> {
+  // First do lexical check (fast fail)
+  const lexicallyResolved = resolvePath(cwd, targetPath);
+
+  // Realpath the workspace root (so a symlinked CWD doesn't bypass)
+  const realWorkspace = await realpath(cwd);
+
+  // Realpath the target: if target exists, realpath it directly;
+  // if not, realpath the parent directory and join with basename (for write ops).
+  let realTarget: string;
+  try {
+    realTarget = await realpath(lexicallyResolved);
+  } catch (err) {
+    // Target doesn't exist — realpath the parent directory
+    const parentDir = path.dirname(lexicallyResolved);
+    const realParent = await realpath(parentDir);
+    realTarget = path.join(realParent, path.basename(lexicallyResolved));
+  }
+
+  // Re-check containment using real paths
+  const relative = path.relative(realWorkspace, realTarget);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Path "${targetPath}" escapes the workspace and was blocked.`);
+  }
+
+  return realTarget;
 }
 
 function isIgnored(targetPath: string, ignore: string[]): boolean {
@@ -63,7 +98,7 @@ const readFileTool: ToolDefinition = {
     required: ["path"],
   },
   async execute(params, ctx: ToolExecutionContext): Promise<ToolResult> {
-    const targetPath = resolvePath(ctx.cwd, String(params.path ?? ""));
+    const targetPath = await resolveRealPath(ctx.cwd, String(params.path ?? ""));
     let content = await readFile(targetPath, "utf8");
 
     const offset = Number(params.offset);
@@ -100,7 +135,7 @@ const writeFileTool: ToolDefinition = {
     required: ["path", "content"],
   },
   async execute(params, ctx: ToolExecutionContext): Promise<ToolResult> {
-    const targetPath = resolvePath(ctx.cwd, String(params.path ?? ""));
+    const targetPath = await resolveRealPath(ctx.cwd, String(params.path ?? ""));
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, String(params.content ?? ""), "utf8");
     return { output: `Wrote ${targetPath}` };
@@ -123,7 +158,7 @@ const editFileTool: ToolDefinition = {
     required: ["path", "search", "replace"],
   },
   async execute(params, ctx: ToolExecutionContext): Promise<ToolResult> {
-    const targetPath = resolvePath(ctx.cwd, String(params.path ?? ""));
+    const targetPath = await resolveRealPath(ctx.cwd, String(params.path ?? ""));
     const search = String(params.search ?? "");
     const replace = String(params.replace ?? "");
     const replaceAll = Boolean(params.replace_all);
@@ -155,7 +190,7 @@ const listDirTool: ToolDefinition = {
     },
   },
   async execute(params, ctx: ToolExecutionContext): Promise<ToolResult> {
-    const targetPath = resolvePath(ctx.cwd, String(params.path ?? "."));
+    const targetPath = await resolveRealPath(ctx.cwd, String(params.path ?? "."));
     const entries = await readdir(targetPath, { withFileTypes: true });
     const lines = entries
       .map((entry) => `${entry.isDirectory() ? "dir " : "file"} ${entry.name}`)
@@ -178,7 +213,7 @@ const globTool: ToolDefinition = {
     required: ["pattern"],
   },
   async execute(params, ctx: ToolExecutionContext): Promise<ToolResult> {
-    const searchRoot = resolvePath(ctx.cwd, String(params.path ?? "."));
+    const searchRoot = await resolveRealPath(ctx.cwd, String(params.path ?? "."));
     const pattern = String(params.pattern ?? "**/*");
     const regex = globToRegex(pattern);
     const maxResults = 200;
@@ -233,7 +268,7 @@ const grepTool: ToolDefinition = {
     required: ["pattern"],
   },
   async execute(params, ctx: ToolExecutionContext): Promise<ToolResult> {
-    const searchRoot = resolvePath(ctx.cwd, String(params.path ?? "."));
+    const searchRoot = await resolveRealPath(ctx.cwd, String(params.path ?? "."));
     const patternStr = String(params.pattern ?? "");
     const maxResults = Number(params.max_results) || 50;
     let searchRegex: RegExp;

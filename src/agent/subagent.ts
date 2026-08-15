@@ -11,6 +11,8 @@ import { collectProviderText } from "../core/stream.js";
 import type { ToolExecutionContext } from "./tool-registry.js";
 import { getToolDefinitionsForApi, executeTool } from "./tool-registry.js";
 import type { HookRunner } from "../plugins/hooks.js";
+import { checkPermission, type PermissionConfig } from "../safety/permissions.js";
+import { classifySafety } from "../safety/classifier.js";
 import os from "node:os";
 
 // ---- Types ----
@@ -44,6 +46,8 @@ export interface SubagentOptions {
   retryBaseDelayMs?: number;
   /** Hook runner to fire SubagentStop when this subagent completes. */
   hooks?: HookRunner;
+  /** Permission config for tool execution (inherited from parent). */
+  permission?: PermissionConfig;
 }
 
 export interface SubagentResult {
@@ -143,6 +147,7 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
     projectInstructions,
     memoryContent,
     hooks,
+    permission,
   } = options;
 
   const tools = options.tools ?? READ_ONLY_TOOLS;
@@ -168,6 +173,7 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
           signal: options.signal,
           maxRetries: options.maxRetries,
           retryBaseDelayMs: options.retryBaseDelayMs,
+          permission: options.permission,
         }),
       timeoutAfter<SubagentLoopResult>(timeout, "Subagent timeout"),
     ]);
@@ -211,11 +217,14 @@ async function executeSubagentLoop(
   allowedTools: string[],
   toolContext: ToolExecutionContext,
   maxTurns: number,
-  opts: { signal?: AbortSignal; maxRetries?: number; retryBaseDelayMs?: number } = {},
+  opts: { signal?: AbortSignal; maxRetries?: number; retryBaseDelayMs?: number; permission?: PermissionConfig } = {},
 ): Promise<SubagentLoopResult> {
   let totalTokens = 0;
   const toolsUsed: string[] = [];
   const toolDefs = getToolDefinitionsForApi().filter((t) => allowedTools.includes(t.name));
+  if (process.env.ZENOCLI_DEBUG) {
+    console.error(`[Subagent DEBUG] allowedTools=`, allowedTools, `toolDefs=`, toolDefs.map(t => t.name));
+  }
   const maxRetries = opts.maxRetries ?? 0;
   const retryBaseDelayMs = opts.retryBaseDelayMs ?? 1000;
 
@@ -252,10 +261,60 @@ async function executeSubagentLoop(
           };
         }
 
-        // Verify tool is allowed
+        // Verify tool is allowed (whitelist check)
         if (!allowedTools.includes(toolCall.name)) {
           ctx.addToolResult(toolCall.name, `Tool "${toolCall.name}" is not available in this subagent.`);
           continue;
+        }
+
+        // ---- Permission check (mirrors loop.ts handleToolCall) ----
+        if (opts.permission) {
+          const prompt = checkPermission(toolCall.name, toolCall.arguments, opts.permission);
+          if (prompt) {
+            // Permission is required — check if we can auto-approve
+            let allowed = false;
+            if (opts.permission.mode === "auto") {
+              // Use safety classifier in auto mode
+              const verdict = classifySafety(toolCall.name, toolCall.arguments, toolContext.cwd);
+              allowed = verdict.allowed;
+              if (!allowed) {
+                // Subagent fails when blocked by classifier
+                return {
+                  message: `Safety classifier blocked ${toolCall.name}: ${verdict.reason ?? "unknown reason"}`,
+                  totalTokens,
+                  success: false,
+                  error: "permission_denied",
+                  turns: turn + 1,
+                  toolsUsed,
+                };
+              }
+            } else if (opts.permission.mode === "bypassPermissions") {
+              // bypassPermissions mode: checkPermission returns null, so we shouldn't reach here
+              // but just in case, allow
+              allowed = true;
+            } else {
+              // default, acceptEdits, plan, dontAsk: subagents can't prompt, so deny and fail
+              return {
+                message: `Permission denied for "${toolCall.name}". The subagent cannot prompt for approval.`,
+                totalTokens,
+                success: false,
+                error: "permission_denied",
+                turns: turn + 1,
+                toolsUsed,
+              };
+            }
+            if (!allowed) {
+              return {
+                message: `Permission denied for "${toolCall.name}".`,
+                totalTokens,
+                success: false,
+                error: "permission_denied",
+                turns: turn + 1,
+                toolsUsed,
+              };
+            }
+          }
+          // prompt is null → auto-approved, continue to execution
         }
 
         if (!toolsUsed.includes(toolCall.name)) {

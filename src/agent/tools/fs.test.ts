@@ -1,5 +1,5 @@
-import { afterAll, describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { afterAll, describe, expect, it, skipIf } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fsToolDefinitions } from "./fs.js";
@@ -65,6 +65,83 @@ describe("filesystem tools confine access to the workspace", () => {
 
     const grepResult = await run(findTool("grep"), { pattern: "x", path: "/etc" }, ctx);
     expect(grepResult.error).toMatch(/escapes the workspace/);
+  });
+
+  // --- New realpath containment tests ---
+
+  it("blocks read_file with ../../etc/passwd traversal", async () => {
+    const result = await run(findTool("read_file"), { path: "../../etc/passwd" }, ctx);
+    expect(result.error).toMatch(/escapes the workspace/);
+  });
+
+  it("blocks write_file to ../../.ssh/id_rsa", async () => {
+    const result = await run(findTool("write_file"), { path: "../../.ssh/id_rsa", content: "key" }, ctx);
+    expect(result.error).toMatch(/escapes the workspace/);
+  });
+
+  // Test symlink escape: create a symlink in workspace pointing outside, then try to read through it
+  (process.platform !== "win32" ? it : it.skip)("blocks in-workspace symlink pointing to /etc/passwd", async () => {
+    const symlinkPath = path.join(cwd, "escape-link");
+    try {
+      symlinkSync("/etc/passwd", symlinkPath);
+    } catch (err) {
+      // Skip if no permission to create symlinks
+      if (err instanceof Error && (err.code === "EPERM" || err.code === "EACCES")) {
+        return;
+      }
+      throw err;
+    }
+
+    const result = await run(findTool("read_file"), { path: "escape-link" }, ctx);
+    expect(result.error).toMatch(/escapes the workspace/);
+  });
+
+  // Test workspace-root symlink: CWD is a symlink to a real dir — should not silently escape
+  (process.platform !== "win32" ? it : it.skip)("workspace-root symlink does not silently escape", async () => {
+    const realWorkspace = mkdtempSync(path.join(os.tmpdir(), ".zeno-fs-real-"));
+    const symlinkWorkspace = path.join(os.tmpdir(), `.zeno-fs-symlink-${Date.now()}`);
+
+    try {
+      symlinkSync(realWorkspace, symlinkWorkspace);
+    } catch (err) {
+      rmSync(realWorkspace, { recursive: true, force: true });
+      if (err instanceof Error && (err.code === "EPERM" || err.code === "EACCES")) {
+        return;
+      }
+      throw err;
+    }
+
+    const filePath = path.join(realWorkspace, "secret.txt");
+    writeFileSync(filePath, "inside real workspace");
+
+    const symlinkCtx = makeContext(symlinkWorkspace);
+    const result = await run(findTool("read_file"), { path: "secret.txt" }, symlinkCtx);
+    // Should succeed because the real target is inside the real workspace
+    expect(result.error).toBeUndefined();
+    expect(result.output).toContain("inside real workspace");
+
+    rmSync(symlinkWorkspace, { recursive: true, force: true });
+    rmSync(realWorkspace, { recursive: true, force: true });
+  });
+
+  // Test symlink inside workspace pointing to another file inside workspace — should work
+  (process.platform !== "win32" ? it : it.skip)("in-workspace symlink to in-workspace file works", async () => {
+    const targetFile = path.join(cwd, "target.txt");
+    writeFileSync(targetFile, "target content");
+    const symlinkPath = path.join(cwd, "link-to-target");
+
+    try {
+      symlinkSync(targetFile, symlinkPath);
+    } catch (err) {
+      if (err instanceof Error && (err.code === "EPERM" || err.code === "EACCES")) {
+        return;
+      }
+      throw err;
+    }
+
+    const result = await run(findTool("read_file"), { path: "link-to-target" }, ctx);
+    expect(result.error).toBeUndefined();
+    expect(result.output).toContain("target content");
   });
 
   afterAll(() => {
