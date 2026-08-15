@@ -1,6 +1,7 @@
 /**
  * Dynamic tool registry with lazy-loading schemas, safety levels, and categories.
- * Replaces the hardcoded TOOL_DEFINITIONS array in tools.ts.
+ * Tool definitions live per-module in src/agent/tools/*.ts and are registered
+ * through this registry.
  */
 
 import { redactSensitive, shouldRedactTool } from "../safety/redact.js";

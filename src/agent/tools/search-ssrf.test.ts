@@ -1,5 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { validateFetchUrl, validateFetchUrlInsecure } from "./search.js";
+import dns from "node:dns/promises";
+import { validateFetchUrl, validateFetchUrlInsecure, validateUrlHost } from "./search.js";
+
+vi.mock("node:dns/promises", () => ({
+  default: {
+    lookup: vi.fn(),
+  },
+}));
 
 describe("validateFetchUrl SSRF guard", () => {
   it("allows public https URLs", () => {
@@ -109,16 +116,34 @@ describe("validateFetchUrl SSRF guard", () => {
   });
 });
 
-describe("validateUrlHost DNS rebinding defense (internal function, tested via behavior)", () => {
+describe("validateUrlHost DNS rebinding defense", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("blocks when DNS resolves to private IP (DNS rebinding)", async () => {
-    // This test would need access to the internal validateUrlHost function
-    // For now, we test the behavior through the public API
-    // Note: The actual DNS resolution happens in webFetchTool.execute
-    // which we can't easily unit test without integration setup
-    expect(true).toBe(true); // Placeholder - actual testing done via web_fetch integration
+  it("blocks when DNS resolves to a private IP (DNS rebinding)", async () => {
+    vi.mocked(dns.lookup).mockResolvedValue([
+      { address: "93.184.216.34", family: 4 },
+      { address: "10.0.0.5", family: 4 }, // attacker-controlled private second A record
+    ]);
+    const result = await validateUrlHost("https://public.example.com/");
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/private\/reserved/);
+  });
+
+  it("allows when every resolved IP is public", async () => {
+    vi.mocked(dns.lookup).mockResolvedValue([
+      { address: "93.184.216.34", family: 4 },
+      { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 },
+    ]);
+    const result = await validateUrlHost("https://public.example.com/");
+    expect(result.ok).toBe(true);
+  });
+
+  it("blocks unresolvable hostnames conservatively", async () => {
+    vi.mocked(dns.lookup).mockRejectedValue(new Error("ENOTFOUND"));
+    const result = await validateUrlHost("https://nonesuch.invalid/");
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/Failed to resolve/);
   });
 });

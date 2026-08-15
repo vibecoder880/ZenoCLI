@@ -284,7 +284,8 @@ function isBlockedIp(ip: string): boolean {
 }
 
 /** Core validation: check a URL's host (after DNS resolution) against block lists. */
-async function validateUrlHost(url: string): Promise<{ ok: boolean; reason?: string }> {
+/** Resolve a URL's host via DNS and reject it if any resolved IP is private/reserved. */
+export async function validateUrlHost(url: string): Promise<{ ok: boolean; reason?: string }> {
   let parsed: URL;
   try {
     parsed = new URL(url);
