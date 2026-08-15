@@ -2,7 +2,7 @@
 
 > **Date:** 2026-08-15
 > **Branch:** `khanh`
-> **Status:** IN_PROGRESS (plan approved for implementation)
+> **Status:** DONE (all 5 phases landed, CI green on ubuntu + windows as of 2026-08-15)
 > **Baseline plan:** `/cook` roadmap "ZenoCLI v1.0+ — Completion & Production Hardening Plan"; user selected Milestone 1 of the recommended execution order.
 > **Parent roadmap phases:** A (Workspace boundary), D (Command safety), E (SSRF / secret exfiltration), section 27 (security testing).
 
@@ -27,11 +27,11 @@ Close the P0 escape paths in the existing agent before any platform expansion. M
 
 | Phase | Dir | Owner | Status |
 |---|---|---|---|
-| 1 — Workspace boundary (realpath + subagent gate) | `src/agent/tools/`, `src/agent/` | agent-a | pending |
-| 2 — SSRF + DNS rebinding hardening | `src/agent/tools/search.ts` | agent-b | pending |
-| 3 — Secret redaction + env filtering | `src/safety/redact.ts` | agent-c | pending |
-| 4 — Command AST risk analysis | `src/safety/shell-ast.ts` | agent-d | pending |
-| 5 — Security regression suite + cleanup | `src/**/*.test.ts`, delete `tools.ts` | controller (sequential) | pending |
+| 1 — Workspace boundary (realpath + subagent gate) | `src/agent/tools/`, `src/agent/` | agent-a | done (`0845847`) |
+| 2 — SSRF + DNS rebinding hardening | `src/agent/tools/search.ts` | agent-b | done (`778afcb`) |
+| 3 — Secret redaction + env filtering | `src/safety/redact.ts` | agent-c | done (`f484a82`) |
+| 4 — Command AST risk analysis | `src/safety/shell-ast.ts` | agent-d | done (`7322965`) |
+| 5 — Security regression suite + cleanup | `src/**/*.test.ts`, delete `tools.ts` | controller (sequential) | done (`acfa78d`) |
 
 ## Dependencies / ordering
 
