@@ -7,6 +7,7 @@
  */
 
 import { isProtectedPath } from "./permissions.js";
+import { analyzeCommand } from "./shell-ast.js";
 
 // ---- Types ----
 
@@ -31,55 +32,15 @@ interface BlockRule {
 }
 
 const BLOCK_RULES: BlockRule[] = [
-  // run_command: block destructive commands
+  // run_command: block destructive commands via the shared shell-AST analyzer
   {
     tool: "run_command",
     description: "Block destructive shell commands",
     check: (params) => {
-      const cmd = String(params.cmd ?? "").toLowerCase();
-      const blocked = [
-        { pattern: /\brm\s+-rf\s+\//i, reason: "Recursive delete from root is blocked" },
-        { pattern: /\bgit\s+push\s+--force/i, reason: "Force push is blocked" },
-        { pattern: /\bgit\s+reset\s+--hard\s+origin/i, reason: "Hard reset to origin is blocked" },
-        { pattern: /\bcurl\s+.*\|\s*(?:ba)?sh/i, reason: "Piping curl to shell is blocked" },
-        { pattern: /\bwget\s+.*\|\s*(?:ba)?sh/i, reason: "Piping wget to shell is blocked" },
-        { pattern: /\bchmod\s+-R\s+777/i, reason: "Recursive chmod 777 is blocked" },
-        { pattern: /\bdd\s+if=/i, reason: "dd command is blocked" },
-        { pattern: /\bformat\s+[a-z]:/i, reason: "Format drive is blocked" },
-        { pattern: /\b(apt|yum|brew)\s+remove/i, reason: "Package removal commands require approval" },
-        { pattern: /\bnpm\s+publish/i, reason: "npm publish is blocked" },
-        { pattern: /\bdocker\s+rm\s+-(?:a|f)/i, reason: "Docker force remove is blocked" },
-        { pattern: /\bkill\s+-9\s+1\b/i, reason: "Killing PID 1 is blocked" },
-        { pattern: /\bshutdown\b/i, reason: "Shutdown is blocked" },
-        { pattern: /\breboot\b/i, reason: "Reboot is blocked" },
-      ];
-
-      for (const rule of blocked) {
-        if (rule.pattern.test(cmd)) {
-          return rule.reason;
-        }
-      }
-      return null;
-    },
-  },
-
-  // run_command: block sending data externally
-  {
-    tool: "run_command",
-    description: "Block sending data to external services",
-    check: (params) => {
-      const cmd = String(params.cmd ?? "").toLowerCase();
-      const sendPatterns = [
-        /\bcurl\s+.*-d\s/i,
-        /\bcurl\s+.*--data/i,
-        /\bcurl\s+.*-X\s+(?:POST|PUT|PATCH)/i,
-        /\bwget\s+.*--post/i,
-      ];
-
-      for (const pattern of sendPatterns) {
-        if (pattern.test(cmd)) {
-          return "Sending data to external services requires approval";
-        }
+      const cmd = String(params.cmd ?? "");
+      const analysis = analyzeCommand(cmd);
+      if (analysis.blocked) {
+        return analysis.reasons[0] ?? "Command blocked by safety policy";
       }
       return null;
     },
@@ -199,7 +160,9 @@ export function classifySafety(
     return { allowed: true, risk: "medium" };
   }
 
-  // Shell commands are medium risk by default
+  // Shell commands: blocked verdict comes from the shared shell-AST
+  // analyzer (block rule above). Non-blocked commands stay medium risk by
+  // default so auto mode still prompts conservatively.
   if (toolName === "run_command") {
     return { allowed: true, risk: "medium" };
   }
