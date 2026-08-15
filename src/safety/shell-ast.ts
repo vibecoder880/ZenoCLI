@@ -19,7 +19,7 @@
 
 // ---- Risk scoring (plan section D2) ----
 
-export const RISK = {
+export const RISK: Record<string, number> = {
   READ_ONLY: 0,
   WORKSPACE_WRITE: 1,
   NETWORK: 2,
@@ -28,7 +28,7 @@ export const RISK = {
   SECRET_ACCESS: 6,
   DESTRUCTIVE: 8,
   UNSANDBOXED: 10,
-} as const;
+};
 
 export type RiskLevel = "low" | "medium" | "high";
 
