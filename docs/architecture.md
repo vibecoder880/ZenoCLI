@@ -76,7 +76,9 @@ Agent Loop (orchestrator)
 
 ### Safety (`src/safety/`)
 - **permissions.ts** — 6 permission modes
-- **classifier.ts** — Rule-based safety classifier
+- **classifier.ts** — Rule-based safety classifier (auto mode); `run_command` verdicts share the shell-AST analyzer
+- **shell-ast.ts** — Lightweight shell parser + risk scoring (`analyzeCommand`) — single rule set for `run_command` block checks and auto-mode classification
+- **redact.ts** — Sensitive-value collection + `[REDACTED]` substitution on tool output (env vars with secret patterns, auth-profile secrets)
 - **checkpoints.ts** — File snapshot + undo
 
 ### Plugins (`src/plugins/`)
@@ -191,6 +193,10 @@ command = "npx eslint --fix ${file}"
 ## Security Model
 
 - **6 Permission Modes**: default, acceptEdits, plan, auto, dontAsk, bypassPermissions (cycled with `Shift+Tab` or `/permission`)
+- **Workspace boundary**: all fs tools (`read_file`, `write_file`, `edit_file`, `list_dir`, `glob`, `grep`) realpath-resolve the workspace root and target, and deny any path whose real path escapes the workspace (path traversal, symlink escapes, workspace-root symlinks). Lexical pass first, realpath re-check for TOCTOU.
+- **SSRF guard on `web_fetch`**: https-only, ports 80/443, private/loopback/link-local/reserved IPs always blocked, encoded IP literals normalized (IPv4-mapped IPv6, hex/octal/decimal), DNS re-resolution per redirect hop (max 3) with `dns.lookup({ all: true })` — every resolved IP must be public. The deprecated `allow_private` opt-out was removed.
+- **Secret redaction**: tool output/errors from file, command, web, and MCP tools pass through `redactSensitive()` — env-var and auth-profile secret values are replaced with `[REDACTED]` before reaching the model.
+- **Shell safety (`run_command`)**: destructive shapes (recursive deletes of unsafe targets, force push, dd, drive format, interpreter one-liners wrapping destructive calls, exfiltration via curl/wget, redirects into system paths) are blocked by the shared shell-AST analyzer (`analyzeCommand`); benign commands stay allowed.
 - **Protected Paths**: .git, .bashrc, .mcp.json, etc. (`isProtectedPath()` check on writes)
 - **Safety Classifier**: Rule-based (regex + allow/block lists) — allows read-only tools and safe commands (install, git read, test/lint), blocks destructive shell commands and data exfiltration
 - **Checkpoints**: Every file edit snapshot-able, undo-able (in-memory, max 100, `Esc+Esc` or `/undo`)
@@ -198,7 +204,7 @@ command = "npx eslint --fix ${file}"
 
 ## Testing
 
-- **40 test files** currently (`find src -name '*.test.ts' -o -name '*.test.tsx'`)
+- **86 test files** currently (`find src -name '*.test.ts' -o -name '*.test.tsx'`)
 - Vitest framework (`vitest run`), TypeScript strict mode (`"strict": true`)
 - CI runs `npm run test`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm pack --dry-run` on Ubuntu and Windows
 - Release gates include `npm run release:verify` (tests + typecheck + lint + build + pack) and `npm pack --dry-run`
