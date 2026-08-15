@@ -1,6 +1,7 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { registerTool, getTool, getAllTools, executeTool, clearRegistry, getToolSpecsForPrompt, registerTools, getToolsByCategory } from "./tool-registry.js";
 import type { ToolDefinition } from "./tool-registry.js";
+import { clearSensitiveValuesCache } from "../safety/redact.js";
 
 describe("ToolRegistry", () => {
   beforeEach(() => {
@@ -146,5 +147,73 @@ describe("ToolRegistry", () => {
 
     expect(getAllTools()).toHaveLength(1);
     expect(getTool("dup")?.description).toBe("Second");
+  });
+
+  it("redacts output for denylisted tools (run_command)", async () => {
+    vi.stubEnv("SECRET_TOKEN", "sk-live-abcdefghijklmnop");
+    clearSensitiveValuesCache();
+
+    registerTool({
+      name: "run_command",
+      description: "Run a command",
+      category: "exec",
+      safety: "dangerous",
+      parameters: { type: "object", properties: { cmd: { type: "string", description: "command" } } },
+      execute: async () => ({ output: "Output: sk-live-abcdefghijklmnop" }),
+    });
+
+    const result = await executeTool("run_command", { cmd: "echo test" }, { cwd: "/tmp", ignore: [] });
+    expect(result.output).toBe("Output: [REDACTED]");
+  });
+
+  it("redacts error for denylisted tools", async () => {
+    vi.stubEnv("API_KEY", "secret-api-key-12345");
+    clearSensitiveValuesCache();
+
+    registerTool({
+      name: "read_file",
+      description: "Read a file",
+      category: "fs",
+      safety: "safe",
+      parameters: { type: "object", properties: { path: { type: "string", description: "file path" } } },
+      execute: async () => { throw new Error("Failed to read: secret-api-key-12345"); },
+    });
+
+    const result = await executeTool("read_file", { path: "/etc/passwd" }, { cwd: "/tmp", ignore: [] });
+    expect(result.error).toBe("Failed to read: [REDACTED]");
+  });
+
+  it("does not redact output for non-denylisted tools (ask_user)", async () => {
+    vi.stubEnv("TOKEN", "should-not-be-redacted");
+    clearSensitiveValuesCache();
+
+    registerTool({
+      name: "ask_user",
+      description: "Ask user",
+      category: "orchestration",
+      safety: "safe",
+      parameters: { type: "object", properties: { question: { type: "string", description: "question" } } },
+      execute: async () => ({ output: "User said: should-not-be-redacted" }),
+    });
+
+    const result = await executeTool("ask_user", { question: "test?" }, { cwd: "/tmp", ignore: [] });
+    expect(result.output).toBe("User said: should-not-be-redacted");
+  });
+
+  it("redacts MCP tool output", async () => {
+    vi.stubEnv("MCP_SECRET", "mcp-secret-value-xyz");
+    clearSensitiveValuesCache();
+
+    registerTool({
+      name: "mcp__github__list_repos",
+      description: "List GitHub repos",
+      category: "web",
+      safety: "safe",
+      parameters: { type: "object", properties: {} },
+      execute: async () => ({ output: "Repos: mcp-secret-value-xyz" }),
+    });
+
+    const result = await executeTool("mcp__github__list_repos", {}, { cwd: "/tmp", ignore: [] });
+    expect(result.output).toBe("Repos: [REDACTED]");
   });
 });

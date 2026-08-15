@@ -3,6 +3,8 @@
  * Replaces the hardcoded TOOL_DEFINITIONS array in tools.ts.
  */
 
+import { redactSensitive, shouldRedactTool } from "../safety/redact.js";
+
 /** JSON Schema type for tool parameters. */
 export type JsonSchema = {
   type: "object";
@@ -117,9 +119,21 @@ export async function executeTool(
     return { output: "", error: `Unknown tool "${name}".` };
   }
   try {
-    return await tool.execute(params, context);
+    const result = await tool.execute(params, context);
+    // Redact sensitive values from output and error for tools that can leak secrets
+    if (shouldRedactTool(name)) {
+      return {
+        output: redactSensitive(result.output),
+        error: result.error ? redactSensitive(result.error) : undefined,
+      };
+    }
+    return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    // Also redact error messages for redacted tools
+    if (shouldRedactTool(name)) {
+      return { output: "", error: redactSensitive(message) };
+    }
     return { output: "", error: message };
   }
 }
