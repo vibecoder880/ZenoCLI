@@ -1,5 +1,5 @@
-import { afterAll, describe, expect, it, skipIf } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, existsSync } from "node:fs";
+import { afterAll, describe, expect, it } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fsToolDefinitions } from "./fs.js";

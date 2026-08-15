@@ -147,7 +147,6 @@ async function runSubagent(options: SubagentOptions): Promise<SubagentResult> {
     projectInstructions,
     memoryContent,
     hooks,
-    permission,
   } = options;
 
   const tools = options.tools ?? READ_ONLY_TOOLS;

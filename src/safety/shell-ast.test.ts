@@ -24,7 +24,7 @@ describe("analyzeCommand — destructive commands blocked", () => {
     ["python3 -c 'os.system(\"rm -rf /\")'", /interpreter one-liner/i],
     ["sh -c 'rm -rf ~'", /interpreter one-liner/i],
     ["echo x > /etc/crontab", /redirect/i],
-  ])("%s -> blocked", (cmd, _pattern) => {
+  ])("%s -> blocked", (cmd) => {
     const result = analyzeCommand(cmd);
     expect(result.blocked).toBe(true);
     expect(result.risk).toBe("high");

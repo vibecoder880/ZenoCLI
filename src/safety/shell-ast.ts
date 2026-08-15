@@ -56,8 +56,6 @@ export interface ShellStatement {
   hasHeredoc: boolean;
 }
 
-const STATEMENT_SEPARATORS = /\|\||&&|;/;
-
 /**
  * Lightweight shell tokenizer: split a command into statements on `|` and
  * `;` (pipeline/list boundaries) while keeping quotes and `&&`/`||` chains
@@ -66,7 +64,7 @@ const STATEMENT_SEPARATORS = /\|\||&&|;/;
  */
 export function parseShellStatements(command: string): ShellStatement[] {
   const statements: ShellStatement[] = [];
-  const segments = splitRespectingQuotes(command, "|;", "");
+  const segments = splitRespectingQuotes(command, "|;");
   for (const raw of segments) {
     const segment = raw.trim();
     if (!segment) continue;
@@ -92,7 +90,7 @@ export function parseShellStatements(command: string): ShellStatement[] {
 }
 
 /** Split on a separator while keeping quoted sections whole. */
-function splitRespectingQuotes(input: string, seps: string, _extraSep: string): string[] {
+function splitRespectingQuotes(input: string, seps: string): string[] {
   const parts: string[] = [];
   let current = "";
   let quote: string | null = null;

@@ -50,7 +50,7 @@ async function resolveRealPath(cwd: string, targetPath: string): Promise<string>
   let realTarget: string;
   try {
     realTarget = await realpath(lexicallyResolved);
-  } catch (err) {
+  } catch {
     // Target doesn't exist — realpath the parent directory
     const parentDir = path.dirname(lexicallyResolved);
     const realParent = await realpath(parentDir);
