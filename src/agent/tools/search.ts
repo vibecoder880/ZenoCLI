@@ -4,6 +4,7 @@
  */
 
 import type { ToolDefinition } from "../tool-registry.js";
+import dns from "node:dns/promises";
 
 // ---- Web Search (DuckDuckGo HTML lite) ----
 
@@ -115,11 +116,132 @@ function isBlockedIpv4(ip: string): boolean {
 
 function isBlockedIpv6(ip: string): boolean {
   const lower = ip.toLowerCase();
+
+  // IPv4-mapped IPv6: ::ffff:1.2.3.4 or ::ffff:7f00:1
+  // Normalize the embedded IPv4 and check it
+  const ipv4MappedMatch = lower.match(/^::ffff:([0-9a-f:.]+)$/i);
+  if (ipv4MappedMatch) {
+    const inner = ipv4MappedMatch[1];
+    const normalized = normalizeIpLiteral(`::ffff:${inner}`);
+    if (normalized) {
+      return isBlockedIpv4(normalized);
+    }
+  }
+
   return (
     lower === "::1" || // loopback
     lower.startsWith("fc") || lower.startsWith("fd") || // ULA fc00::/7
     lower.startsWith("fe80") // link-local fe80::/10
   );
+}
+
+/**
+ * Normalize various IPv4 literal forms to dotted-decimal notation.
+ * Handles: hex (0x7f000001), octal (0177.0.0.1), decimal integer (2130706433),
+ * and IPv4-mapped IPv6 (::ffff:1.2.3.4, ::ffff:7f00:1, etc.).
+ * Returns dotted-decimal string (e.g., "127.0.0.1") or null if not an IPv4 literal.
+ */
+function normalizeIpLiteral(raw: string): string | null {
+  const s = raw.trim();
+
+  // IPv4-mapped IPv6: ::ffff:1.2.3.4 or ::ffff:7f00:1 (compressed hex)
+  const ipv4MappedMatch = s.match(/^::ffff:([0-9a-fA-F:.]+)$/i);
+  if (ipv4MappedMatch) {
+    const inner = ipv4MappedMatch[1];
+    // If inner contains dots, it's already dotted decimal; recurse to handle octal/hex inside
+    if (inner.includes(".")) {
+      return normalizeIpLiteral(inner);
+    }
+    // Handle compressed hex form (e.g., "7f00:1" -> "7f000001")
+    if (inner.includes(":")) {
+      const parts = inner.split(":");
+      // Each part is a 16-bit hex value; expand to full 32-bit
+      const fullHex = parts.map((p) => p.padStart(4, "0")).join("");
+      const asHex = parseInt(fullHex, 16);
+      if (Number.isFinite(asHex) && asHex >= 0 && asHex <= 0xffffffff) {
+        return [
+          (asHex >>> 24) & 0xff,
+          (asHex >>> 16) & 0xff,
+          (asHex >>> 8) & 0xff,
+          asHex & 0xff,
+        ].join(".");
+      }
+      return null;
+    }
+    // Full hex form (e.g., "01020304")
+    const asHex = parseInt(inner, 16);
+    if (Number.isFinite(asHex) && asHex >= 0 && asHex <= 0xffffffff) {
+      return [
+        (asHex >>> 24) & 0xff,
+        (asHex >>> 16) & 0xff,
+        (asHex >>> 8) & 0xff,
+        asHex & 0xff,
+      ].join(".");
+    }
+    return null;
+  }
+
+  // Hex literal: 0x7f000001
+  if (/^0x[0-9a-fA-F]+$/.test(s)) {
+    const val = parseInt(s, 16);
+    if (Number.isFinite(val) && val >= 0 && val <= 0xffffffff) {
+      return [
+        (val >>> 24) & 0xff,
+        (val >>> 16) & 0xff,
+        (val >>> 8) & 0xff,
+        val & 0xff,
+      ].join(".");
+    }
+    return null;
+  }
+
+  // Decimal integer literal: 2130706433
+  if (/^\d+$/.test(s)) {
+    const val = parseInt(s, 10);
+    if (Number.isFinite(val) && val >= 0 && val <= 0xffffffff) {
+      return [
+        (val >>> 24) & 0xff,
+        (val >>> 16) & 0xff,
+        (val >>> 8) & 0xff,
+        val & 0xff,
+      ].join(".");
+    }
+    return null;
+  }
+
+  // Dotted notation with possible octal components: 0177.0.0.1
+  if (/^\d+(\.\d+){3}$/.test(s)) {
+    const parts = s.split(".").map((p) => {
+      // Leading zero = octal in many parsers; treat as octal if starts with 0 and has more digits
+      if (p.startsWith("0") && p.length > 1) {
+        return parseInt(p, 8);
+      }
+      return parseInt(p, 10);
+    });
+    if (parts.every((n) => Number.isFinite(n) && n >= 0 && n <= 255)) {
+      return parts.join(".");
+    }
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * Check if a string is an IPv4 literal (dotted, or encoded form).
+ * Returns the normalized dotted-decimal if yes, else null.
+ */
+function parseIpv4Literal(host: string): string | null {
+  // Already dotted-decimal
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    const parts = host.split(".").map((p) => Number(p));
+    if (parts.every((n) => Number.isFinite(n) && n >= 0 && n <= 255)) {
+      return host;
+    }
+    return null;
+  }
+  // Try encoded forms
+  return normalizeIpLiteral(host);
 }
 
 /** True if the hostname itself is reserved or clearly internal. */
@@ -135,7 +257,73 @@ function isBlockedHostname(hostname: string): boolean {
   );
 }
 
-/** URLs we can safely fetch — https, no credentials, public target. */
+/** Check if a port is allowed (80, 443). */
+function isAllowedPort(port: string | null, protocol: string): boolean {
+  if (!port) {
+    // Default ports
+    return protocol === "https:" || protocol === "http:";
+  }
+  const portNum = Number(port);
+  if (!Number.isFinite(portNum)) return false;
+  // Only allow 80 (http) and 443 (https)
+  return portNum === 80 || portNum === 443;
+}
+
+/** Check if an IP (IPv4 or IPv6) is blocked. */
+function isBlockedIp(ip: string): boolean {
+  // Try as IPv4
+  const ipv4 = parseIpv4Literal(ip);
+  if (ipv4) {
+    return isBlockedIpv4(ipv4);
+  }
+  // Try as IPv6
+  if (ip.includes(":")) {
+    return isBlockedIpv6(ip);
+  }
+  return false;
+}
+
+/** Core validation: check a URL's host (after DNS resolution) against block lists. */
+async function validateUrlHost(url: string): Promise<{ ok: boolean; reason?: string }> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { ok: false, reason: "Invalid URL" };
+  }
+
+  if (parsed.protocol !== "https:") {
+    return { ok: false, reason: "Only https URLs are allowed (http/plaintext is blocked)" };
+  }
+  if (parsed.username || parsed.password) {
+    return { ok: false, reason: "URLs with embedded credentials are blocked" };
+  }
+  if (!isAllowedPort(parsed.port, parsed.protocol)) {
+    return { ok: false, reason: `Port ${parsed.port || "default"} is not allowed (only 80/443)` };
+  }
+
+  const hostname = parsed.hostname;
+  if (isBlockedHostname(hostname)) {
+    return { ok: false, reason: `Host "${hostname}" is reserved or internal` };
+  }
+
+  // Resolve hostname via DNS and check all resolved IPs
+  try {
+    const results = await dns.lookup(hostname, { all: true });
+    for (const { address } of results) {
+      if (isBlockedIp(address)) {
+        return { ok: false, reason: `Resolved IP ${address} is a private/reserved address` };
+      }
+    }
+  } catch {
+    // If DNS fails, treat as potentially unsafe
+    return { ok: false, reason: `Failed to resolve host "${hostname}"` };
+  }
+
+  return { ok: true };
+}
+
+/** URLs we can safely fetch — https, no credentials, public target (lexical check only, no DNS). */
 function isSafeFetchUrl(url: string): { ok: boolean; reason?: string } {
   let parsed: URL;
   try {
@@ -150,6 +338,9 @@ function isSafeFetchUrl(url: string): { ok: boolean; reason?: string } {
   if (parsed.username || parsed.password) {
     return { ok: false, reason: "URLs with embedded credentials are blocked" };
   }
+  if (!isAllowedPort(parsed.port, parsed.protocol)) {
+    return { ok: false, reason: `Port ${parsed.port || "default"} is not allowed (only 80/443)` };
+  }
 
   const hostname = parsed.hostname;
   if (isBlockedHostname(hostname)) {
@@ -157,9 +348,10 @@ function isSafeFetchUrl(url: string): { ok: boolean; reason?: string } {
   }
 
   // Raw-IP URLs (https://1.2.3.4/...) can be checked directly.
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-    if (isBlockedIpv4(hostname)) {
-      return { ok: false, reason: `IP ${hostname} is a private/reserved address` };
+  const ipv4Literal = parseIpv4Literal(hostname);
+  if (ipv4Literal) {
+    if (isBlockedIpv4(ipv4Literal)) {
+      return { ok: false, reason: `IP ${ipv4Literal} is a private/reserved address` };
     }
     return { ok: true };
   }
@@ -175,91 +367,118 @@ function isSafeFetchUrl(url: string): { ok: boolean; reason?: string } {
   return { ok: true };
 }
 
-/** Deterministically validate a URL (https-only, public hosts). */
+/** Deterministically validate a URL (https-only, public hosts, lexical check only). */
 export function validateFetchUrl(url: string): { ok: boolean; reason?: string } {
   return isSafeFetchUrl(url);
 }
 
-/** Validate a URL while permitting the caller to opt into loopback/private hosts. */
+/** @deprecated Use validateFetchUrl. The allow_private opt-out has been removed; private/loopback is always blocked. */
 export function validateFetchUrlInsecure(url: string): { ok: boolean; reason?: string } {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:") {
-      return { ok: false, reason: "Only https URLs are allowed (http/plaintext is blocked)" };
-    }
-    if (parsed.username || parsed.password) {
-      return { ok: false, reason: "URLs with embedded credentials are blocked" };
-    }
-    return { ok: true };
-  } catch {
-    return { ok: false, reason: "Invalid URL" };
-  }
+  return isSafeFetchUrl(url);
 }
 
 const webFetchTool: ToolDefinition = {
   name: "web_fetch",
-  description: "Fetch a URL and return its content as text. Supports HTML pages, JSON APIs, and plain text.",
+  description: "Fetch a URL and return its content as text. Supports HTML pages, JSON APIs, and plain text. Only https on ports 80/443 to public hosts; private/loopback/link-local IPs are always blocked. Redirects are followed up to 3 hops with re-validation at each hop.",
   category: "web",
   safety: "safe",
   parameters: {
     type: "object",
     properties: {
-      url: { type: "string", description: "URL to fetch (https only, public hosts)." },
+      url: { type: "string", description: "URL to fetch (https only, public hosts, ports 80/443)." },
       max_length: { type: "number", description: "Max characters to return (default: 10000)." },
-      allow_private: { type: "boolean", description: "Allow loopback/private hosts (default: false)." },
     },
     required: ["url"],
   },
   async execute(params): Promise<{ output: string; error?: string }> {
-    const url = String(params.url ?? "");
+    let url = String(params.url ?? "");
     const maxLength = Number(params.max_length) || 10000;
-    const allowPrivate = Boolean(params.allow_private);
 
     if (!url) {
       return { output: "", error: "URL is required." };
     }
 
-    // allow_private:true is an explicit, dangerous opt-out for intentional
-// localhost-fetch scenarios; keep the protocol/credentials checks regardless.
-const validated = allowPrivate ? validateFetchUrlInsecure(url) : validateFetchUrl(url);
-    if (!validated.ok) {
-      return { output: "", error: `Blocked by SSRF guard: ${validated.reason}` };
+    // Lexical validation first
+    const lexical = isSafeFetchUrl(url);
+    if (!lexical.ok) {
+      return { output: "", error: `Blocked by SSRF guard: ${lexical.reason}` };
     }
 
-    try {
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; ZenoCli/1.0)",
-        },
-        signal: AbortSignal.timeout(15000),
-      });
+    // Follow redirects manually with re-validation, max 3 hops
+    const maxRedirects = 3;
+    let redirectCount = 0;
+    let finalResponse: Response | null = null;
 
-      if (!response.ok) {
-        return { output: "", error: `Fetch failed: HTTP ${response.status}` };
+    while (redirectCount <= maxRedirects) {
+      // Full validation with DNS resolution at each hop
+      const validated = await validateUrlHost(url);
+      if (!validated.ok) {
+        return { output: "", error: `Blocked by SSRF guard: ${validated.reason}` };
       }
 
-      const contentType = response.headers.get("content-type") ?? "";
-      let text = await response.text();
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; ZenoCli/1.0)",
+          },
+          redirect: "manual",
+          signal: AbortSignal.timeout(15000),
+        });
 
-      // Strip HTML tags for HTML content
-      if (contentType.includes("text/html")) {
-        text = text
-          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s{2,}/g, " ")
-          .trim();
+        // Handle redirects manually
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get("location");
+          if (!location) {
+            return { output: "", error: `Redirect without Location header: HTTP ${response.status}` };
+          }
+          // Resolve relative redirect URLs
+          try {
+            url = new URL(location, url).toString();
+          } catch {
+            return { output: "", error: `Invalid redirect URL: ${location}` };
+          }
+          redirectCount++;
+          if (redirectCount > maxRedirects) {
+            return { output: "", error: `Too many redirects (max ${maxRedirects})` };
+          }
+          continue;
+        }
+
+        finalResponse = response;
+        break;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return { output: "", error: `Fetch failed: ${message}` };
       }
-
-      if (text.length > maxLength) {
-        text = text.slice(0, maxLength) + "\n... (truncated)";
-      }
-
-      return { output: text };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return { output: "", error: `Fetch failed: ${message}` };
     }
+
+    if (!finalResponse) {
+      return { output: "", error: "Fetch failed: no response" };
+    }
+
+    if (!finalResponse.ok) {
+      return { output: "", error: `Fetch failed: HTTP ${finalResponse.status}` };
+    }
+
+    const contentType = finalResponse.headers.get("content-type") ?? "";
+    let text = await finalResponse.text();
+
+    // Strip HTML tags for HTML content
+    if (contentType.includes("text/html")) {
+      text = text
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+
+    if (text.length > maxLength) {
+      text = text.slice(0, maxLength) + "\n... (truncated)";
+    }
+
+    return { output: text };
   },
 };
 
